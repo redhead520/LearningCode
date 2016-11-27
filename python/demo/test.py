@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #    9/2/16
 
-' a module '
+" a module "
 
 __author__ = 'redhead'
 
@@ -13,8 +13,9 @@ class ListMetaclass(type):
         attrs['add'] = lambda self, value: self.append(value)
         return type.__new__(cls, name, bases, attrs)
 
-class MyList(list):
-    __metaclass__ = ListMetaclass # 指示使用ListMetaclass来定制类
+
+class MyList (list):
+    __metaclass__ = ListMetaclass  # 指示使用ListMetaclass来定制类
 
 h = MyList()
 h.add(2)

@@ -16,6 +16,7 @@ class StringField(Field):
     def __init__(self, name):
         super(StringField, self).__init__(name, 'varchar(100)')
 
+
 class IntegerField(Field):
     def __init__(self, name):
         super(IntegerField, self).__init__(name, 'bigint')
@@ -37,6 +38,7 @@ class ModelMetaclass(type):
         attrs['__mappings__'] = mappings # 保存属性和列的映射关系
         print(mappings)
         return type.__new__(cls, name, bases, attrs)
+
 
 class Model(dict):
     __metaclass__ = ModelMetaclass
