@@ -20,5 +20,6 @@ urlpatterns = [
     url(r'^$', index),
     url(r'^hello/$', hello),
     url(r'^huang/(.+)/$', huang),
+    url(r'^view$', views),
     url(r'^admin/', include(admin.site.urls)),
 ]

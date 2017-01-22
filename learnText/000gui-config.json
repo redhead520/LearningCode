@@ -1,0 +1,62 @@
+{
+    "configs": [
+        
+{
+            "method": "rc4-md5",
+            
+"password": "huanghf126com",
+            
+"remarks": "huang",
+           
+ "server": "137.175.66.207",
+            
+"server_port": 518
+        },
+       
+ {
+            
+"method": "aes-256-cfb",
+            
+"password": "AV1SYBh5rUg3ockz",
+            
+"remarks": "moxi_02",
+            
+"server": "45.78.46.35",
+            
+"server_port": 1253
+        
+},
+        
+{
+            "
+method": "aes-256-cfb",
+           
+ "password": "p4H71PqY*KT9!Jgz",
+            
+"remarks": "moxi_01",
+            
+"server": "45.78.46.35",
+            
+"server_port": 1420
+        
+},
+        
+{
+           
+ "method": "aes-256-cfb",
+            
+"password": "OQVuF5oRRZDGPGir",
+            
+"remarks": "wrong",
+            
+"server": "104.224.168.41",
+            
+"server_port": 7140
+        
+}
+    ],
+
+    
+"localPort": 1080,
+    "shareOverLan": false
+}
