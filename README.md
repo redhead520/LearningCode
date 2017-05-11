@@ -1,6 +1,6 @@
 #learningCode
 this ssh url is :
 
-git@git.coding.net:Hredhead/learningCode.git
+git@github.com:redhead520/LearningCode.git
 
 ssh ubuntu@123.207.121.96
