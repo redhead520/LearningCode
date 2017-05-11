@@ -8,9 +8,12 @@ http://gogithub.xyz/
 
 
 tengxunyun:
+16257726320@lt
 ssh ubuntu@123.207.121.96
-raymond123456
 
+raymond123456
+/home/ubuntu/web_site/zysite
+http://www.open-erp.xyz/
 
 {
     "server":"118.193.218.144",
