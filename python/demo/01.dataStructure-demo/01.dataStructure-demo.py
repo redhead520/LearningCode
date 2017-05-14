@@ -12,12 +12,12 @@ f = 10.5 % 3.0
 
 print(a, b, c)
 print(d, e, f)
-print "-----------------------"
+print("-----------------------")
 
 str1 = r"this is \a \string! \n and you is son of beach!"
 str2 = "this is \a \string! \n and you is son of beach! hahaha\n"
-print str2, str1
-print "-----------------------"
+print(str2, str1)
+print("-----------------------")
 
 aa = '444444444444'
 bb = aa
