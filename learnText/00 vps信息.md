@@ -1,10 +1,7 @@
-﻿ssh root@107.182.176.112
+﻿ssh root@162.219.127.17 -p 27246
  账号 root
 密码：
-sfShH6SuvPgv
-mySQL pw:redhead
-gogithub.xyz
-http://gogithub.xyz/
+
 
 
 tengxunyun:
