@@ -3,38 +3,39 @@
 
 import time, uuid
 
-from transwarp.orm import Model, StringField, IntegerField, BooleanField, FloatField, TextField
+from transwarp.orm import Model, StringField, IntegerField, BooleanField, FloatField, TextField,TimestampField
 
 class User(Model):
     __table__ = 'users'
 
     id = IntegerField(primary_key=True, auto_increment=True)
     name = StringField(size=50)
-    email = StringField(updatable=False, ddl='varchar(50)')
-    password = StringField(ddl='varchar(50)')
-    admin = BooleanField()
-    image = StringField(ddl='varchar(500)')
-    created_at = FloatField(updatable=False, default=time.time)
+    email = StringField(updatable=False, size=50)
+    password = StringField(50, default='123456')
+    admin = BooleanField(default=False)
+    image = StringField(500, default='')
+    created_at = TimestampField(updatable=False, default=time.time)
 
 class Blog(Model):
     __table__ = 'blogs'
 
-    id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
-    user_id = StringField(updatable=False, ddl='varchar(50)')
-    user_name = StringField(ddl='varchar(50)')
-    user_image = StringField(ddl='varchar(500)')
-    name = StringField(ddl='varchar(50)')
-    summary = StringField(ddl='varchar(200)')
+    id = StringField(primary_key=True, auto_increment=True, size=50)
+    user_id = StringField(updatable=False, size=50)
+    user_name = StringField(50)
+    user_image = StringField(500)
+    name = StringField(50)
+    summary = StringField(200)
     content = TextField()
-    created_at = FloatField(updatable=False, default=time.time)
+    created_at = TimestampField(updatable=False, default=time.time)
 
 class Comment(Model):
     __table__ = 'comments'
 
-    id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
-    blog_id = StringField(updatable=False, ddl='varchar(50)')
-    user_id = StringField(updatable=False, ddl='varchar(50)')
-    user_name = StringField(ddl='varchar(50)')
-    user_image = StringField(ddl='varchar(500)')
+    id = StringField(primary_key=True, auto_increment=True, size=50)
+    blog_id = StringField(updatable=False, size=50)
+    user_id = StringField(updatable=False, size=50)
+    user_name = StringField(50)
+    user_image = StringField(500)
     content = TextField()
-    created_at = FloatField(updatable=False, default=time.time)
+    created_at = TimestampField(updatable=False, default=time.time)
+

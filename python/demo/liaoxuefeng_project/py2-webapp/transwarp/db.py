@@ -78,9 +78,6 @@ _db_ctx = _DbCtx()
 
 # 数据库连接的上下
 class _ConnectionCtx(object):
-    def __init__(self):
-        pass
-
     def __enter__(self):
         global _db_ctx
         self.should_cleanup = False
@@ -130,6 +127,12 @@ class _TransactionCtx(object):
         global _db_ctx
         _db_ctx.connection.rollback()
 
+def connection():
+    return _ConnectionCtx()
+
+def transaction():
+    return _TransactionCtx()
+
 def with_connection(sql_func):
     def func(*args, **kwargs):
         with _ConnectionCtx():
@@ -162,30 +165,52 @@ def create_engine(user='root', password='password', database='test', host='127.0
 def select(sql, *args):
     global _db_ctx
     cursor = _db_ctx.cursor()
-    cursor.execute(sql, *args)
-    data = cursor.fetchall()
-    return data
+    try:
+        cursor.execute(sql, *args)
+        result = cursor.fetchall()
+    except mysql.connector.Error, e:
+        result = e
+    return result
 
 @with_transaction
 def update(sql, *args):
     global _db_ctx
     cursor = _db_ctx.cursor()
-    cursor.execute(sql, *args)
-    data = cursor.fetchall()
-    return data
+    try:
+        result = cursor.execute(sql, *args) # None
+    except mysql.connector.Error, e:
+        result = e
+    return result
 
 @with_transaction
 def insert(sql, *args):
     global _db_ctx
     cursor = _db_ctx.cursor()
-    cursor.execute(sql, *args)
-    data = cursor.fetchall()
-    return data
+    try:
+        result = cursor.execute(sql, *args) # None
+    except mysql.connector.Error, e:
+        result = e
+    return result
 
 @with_transaction
 def delete(sql, *args):
     global _db_ctx
     cursor = _db_ctx.cursor()
-    cursor.execute(sql, *args)
-    data = cursor.fetchall()
-    return data
+    try:
+        result = cursor.execute(sql, *args) # None
+    except mysql.connector.Error, e:
+        result = e
+    return result
+
+# ###############################
+# 多事务例子：
+# db.create_engine(...)
+# with db.connection():
+#     db.select('...')
+#     db.update('...')
+#     db.update('...')
+#
+# with db.transaction():
+#     db.select('...')
+#     db.update('...')
+#     db.update('...')

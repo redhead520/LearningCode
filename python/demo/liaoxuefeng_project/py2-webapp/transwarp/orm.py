@@ -4,7 +4,7 @@ import db
 # ORM全称“Object Relational Mapping”，即对象-关系映射，
 
 class Field(object):
-    def __init__(self, column_type, primary_key=False, default=None, auto_increment=False):
+    def __init__(self, column_type, primary_key=False, default=None, auto_increment=False, updatable=True):
         self.primary_key = primary_key
         self.column_type = column_type
         self.auto_increment = auto_increment  # 自增 Integer
@@ -31,7 +31,7 @@ class FloatField(Field):
 
 class TextField(Field):
     def __init__(self, **kwargs):
-        super(TextField, self).__init__('text', **kwargs)
+        super(TextField, self).__init__('mediumtext', **kwargs)
 
 class DatetimeField(Field):
     def __init__(self, **kwargs):
@@ -56,7 +56,7 @@ class ModelMetaclass(type):
             if isinstance(v, Field):
                 # print('Found mapping: %s==>%s' % (k, v))
                 mappings[k] = v
-                if v.default:
+                if v.default != None:
                     defaults[k] = v.default
                 if not v.auto_increment:
                     fields.append(k)
@@ -75,10 +75,10 @@ class ModelMetaclass(type):
         attrs['__fields__'] = fields       # 保存属性和列的映射关系 除了auto_increment
         attrs['__primary_key__'] = primary_key
         # 构造默认的SELECT, INSERT, UPDATE和DELETE语句:
-        attrs['__select__'] = 'select * from {}'.format(attrs['__table__'])
-        attrs['__insert__'] = 'insert into {} ({}) values ({})'.format(attrs['__table__'], ','.join(fields),','.join(map(lambda x: '?', fields)))
-        attrs['__update__'] = 'update {} set '.format(attrs['__table__'])
-        attrs['__delete__'] = 'delete from {} '.format(attrs['__table__'])
+        attrs['__select__'] = 'SELECT * FROM {}'.format(attrs['__table__'])
+        attrs['__insert__'] = 'INSERT INTO {}'.format(attrs['__table__'])
+        attrs['__update__'] = 'UPDATE {} SET '.format(attrs['__table__'])
+        attrs['__delete__'] = 'DELETE FROM {} '.format(attrs['__table__'])
         return type.__new__(cls, name, bases, attrs)
 
 
@@ -91,7 +91,7 @@ class Model(dict):
         for k,v in self.__defaults__.items():
             if k not in self.keys():
                 value = v() if callable(v) else v
-                self['k'] = value
+                self[k] = value
                 # setattr(self, k, value)
 
     def __getattr__(self, key):
@@ -105,33 +105,45 @@ class Model(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
+    # 格式化 field的值，如果是string，则添加''
+    @staticmethod
+    def fmt(value):
+        return str(value) if not isinstance(value, (str)) else "'{}'".format(value)
 
-    def select(self, **kwargs):
-        sql = self.__select__
-        if kwargs != {}:
-            sql = sql + ' where {}'.format(','.join(map(lambda i:'{}=`{}`'.format(i[0],i[1]),kwargs.items())))
+    @classmethod
+    def select(cls, **kwargs):
+        sql = cls.__select__ + ' WHERE {}'.format(','.join(map(lambda i:'{}={}'.format(i[0],Model.fmt(i[1])),kwargs.items())))
         result = db.select(sql)
         return result
 
     def save(self):
-        sql = self.__insert__
-        args = [self.get(k) for k in self.__fields__]
-        # print sql, args
-        result = db.insert(sql, *args)
+        fields = self.keys()
+        values = map(lambda f: Model.fmt(self[f]), fields)
+        sql = self.__insert__ + ' ({}) VALUES ({})'.format(','.join(fields), ','.join(values))
+        print sql
+        result = db.insert(sql)
         return result
 
     def update(self, **kwargs):
-        sql = self.__update__ + '{}'.format(','.join(map(lambda i:'{}={}'.format(i[0],i[1]),self.items())))
-
+        for key in set(self.keys()) & set(kwargs.keys()):
+            # self.pop(key)
+            pass
+        sql = self.__update__ + '{}'.format(','.join(map(lambda i:'{}={}'.format(i[0],Model.fmt(i[1])),self.items())))
         if kwargs == {}:
             if not self.__primary_key__:
                 raise RuntimeError('table {} has no primary key! '.format(self.__table__))
             try:
-                sql = sql + ' where ({} = `{}`)'.format(self.__primary_key__, self[self.__primary_key__])
+                sql = sql + ' WHERE ({} = {})'.format(self.__primary_key__, Model.fmt(self[self.__primary_key__]))
             except:
                 raise RuntimeError('table {} Instance did not get value of primary key ({})'.format(self.__table__, self.__primary_key__))
         else:
-            sql = sql + ' where ({})'.format(','.join(map(lambda i:'{}=`{}`'.format(i[0],i[1]),kwargs.items())))
+            sql = sql + ' WHERE ({})'.format(','.join(map(lambda i:'{}={}'.format(i[0],Model.fmt(i[1])),kwargs.items())))
         result = db.update(sql)
         return result
 
+    @classmethod
+    def delete(cls, **kwargs):
+        sql = cls.__delete__ + ' WHERE {}'.format(
+            ','.join(map(lambda i: '{}={}'.format(i[0], Model.fmt(i[1])), kwargs.items())))
+        result = db.delete(sql)
+        return result
