@@ -75,7 +75,7 @@ location / {
 #这里是直接转发给后端应用服务器了，也可以是一个静态首页
 # 第一个必选规则
 location = / {
-    proxy_pass http://tomcat:8080/index
+    proxy_pass http://localhost:5000
 }
 # 第二个必选规则是处理静态文件请求，这是nginx作为http服务器的强项
 #### 有两种配置模式，目录匹配或后缀匹配,任选其一或搭配使用
