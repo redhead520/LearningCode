@@ -4,6 +4,7 @@ import mysql.connector
 
 from transwarp import db
 from models.allmodels import User
+from transwarp.web import *
 
 # import logging
 # # level: CRITICAL > ERROR > WARNING > INFO > DEBUG > NOTSET
@@ -20,30 +21,27 @@ db_config = {
 }
 db.create_engine(**db_config)
 
-b = User(id=3, name='55555',email='5555@wwerf.com')
-c = User(id=5, name='cccc',email='cccc@wwerf.com')
-# print b.save()
-# with db.connection():
-#   print User.select(id=3)
-#   print User.select(id=4)
-#   print User.select(id=5)
+wsgi = WSGIApplication()
 
-print '-'*10
-print c.update(id=3)
-# with db.transaction():
-#     print c.update(id=3)
-#     print User.select(id=3)
-#     print User.delete(id=3)
+@get('/')
+def test():
+    input_data = ctx.request.input()
+    ctx.response.content_type = 'text/plain'
+    ctx.response.set_cookie('name', 'value', expires=3600)
+    return 'result'
 
-# a = User(id=9, name='df93',email='9999@wwerf.com')
-#
-# r = a.save()
-# print r
-# # a.save()
-# r = a.update()
-# print r
-# result = User.select(id=9)
-# print result
-# print '-'*20
-# result = User.delete(id=9)
-# print result
+@get('/home')
+def home():
+    ctx.response.content_type = 'text/plain'
+    ctx.response.set_cookie('name', 'value', expires=3600)
+    return 'hello huang hongfa'
+
+wsgi.add_url(test)
+wsgi.add_url(home)
+
+if __name__ == '__main__':
+    # 开发模式（Development Mode）
+    wsgi.run()
+else:
+    # 产品模式（Production Mode）
+    application = wsgi.get_wsgi_application()
