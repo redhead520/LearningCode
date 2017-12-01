@@ -11,7 +11,7 @@ git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 
 ## 配置.vimrc文件（在账户根目录下新建），文件内容如下：
 ```
-et nocompatible              " be iMproved, required
+set nocompatible              " be iMproved, required
 filetype off                  " required
 
 " set the runtime path to include Vundle and initialize
@@ -29,7 +29,7 @@ Bundle 'Glench/Vim-Jinja2-Syntax'
 " auto complete
 Bundle 'Valloric/YouCompleteMe'
 " source tree
-Bundle 'scrooloose/nerdtree'
+" Bundle 'scrooloose/nerdtree'
 " The following are examples of different formats supported.
 " Keep Plugin commands between vundle#begin/end.
 " plugin on GitHub repo
@@ -67,7 +67,7 @@ filetype plugin indent on    " required
 set t_Co=256
 syntax on
 colorscheme molokai
-set shormess=atI
+set shortmess=atI
 set showcmd
 set autoindent
 set cindent
@@ -84,14 +84,16 @@ set incsearch
 set langmenu=zh_CNUTF-8
 set helplang=cn
 set cmdheight=2
-
+set mouse=a
 " NERDTree setting
 " open a NERDTree automatically when wim starts up
-autocmd vimenter * NERDTree
+" autocmd vimenter * NERDTree
 
 " close vim if the only window left open is a NERDTree
-autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType ==primary") | q | endif
+" autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTreeType ==primary") | q | endif
 
+set completeopt-=preview
+let g:ycm_add_preview_to_completeopt = 0
 "for YouCompleteMe
 
 ```
@@ -103,6 +105,42 @@ autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTreeType") && b:NERDTree
  :PluginInstall  （执行命令）
 ```
 
+
+
+
+set nocompatible      
+filetype off               
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+Plugin 'VundleVim/Vundle.vim'
+Bundle 'tomasr/molokai'
+Bundle 'Glench/Vim-Jinja2-Syntax'
+Bundle 'Valloric/YouCompleteMe'
+call vundle#end()            " required
+filetype plugin indent on    " required
+set t_Co=256
+syntax on
+colorscheme molokai
+set shortmess=atI
+set showcmd
+set autoindent
+set cindent
+set tabstop=4
+set softtabstop=4
+set shiftwidth=4
+set expandtab
+set smarttab
+set number
+set cursorline
+set history=1000
+set hlsearch
+set incsearch
+set langmenu=zh_CNUTF-8
+set helplang=cn
+set cmdheight=2
+set mouse=a
+set completeopt-=preview
+let g:ycm_add_preview_to_completeopt = 0
 
 
 
