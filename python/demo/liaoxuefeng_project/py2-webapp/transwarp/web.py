@@ -5,9 +5,7 @@ import functools
 import logging
 from cgi import escape
 from urlparse import parse_qs
-
-
-
+import json
 # level: CRITICAL > ERROR > WARNING > INFO > DEBUG > NOTSET
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(process)d %(thread)d %(message)s',
@@ -72,11 +70,13 @@ class Request(object):
 class Response(object):
     # 设置header:
     def __init__(self):
-        self.__status = 200
-        self.headers = []
+        self.__status = '200 OK'
+        self.headers = {
+            'Content-Type': 'application/json'
+        }
 
     def set_header(self, key, value):
-        self.headers.append((key, value))
+        self.headers[key] = value
 
     # 设置Cookie:
     def set_cookie(self, name, value, max_age=None, expires=None, path='/'):
@@ -104,10 +104,11 @@ class Beforeware:
         print '前面处理完'
         for data in self.wrapped_app(environ, start_response):
             print '后面:可以处理返回的body数据'
-
-            start_response(ctx.response.status,ctx.response.headers)
-            print start_response
-            yield data.upper()
+            if ctx.response.headers['Content-Type'] == 'json':
+                print 'handle json data======>'
+                data = json.dumps(data)
+            # start_response(ctx.response.status, ctx.response.headers.items())
+            yield data
 
 # 中间件
 class Afterware:
@@ -138,7 +139,15 @@ def get(path):
 
 # 定义POST:
 def post(path):
-    pass
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            return func(*args, **kw)
+        wrapper.__method__ = 'POST'
+        wrapper.__route__ = path
+        return wrapper
+
+    return decorator
 
 # 定义模板:
 def view(path):
@@ -171,8 +180,7 @@ class WSGIApplication(object):
     # 添加一个URL定义:
     def add_url(self, func):
         key = '{}{}'.format(func.__method__, func.__route__).lower()
-        if not self.urls.has_key(func.__name__):
-            print key
+        if not self.urls.has_key(key):
             self.urls[key] = func
         else:
             raise 'error'
@@ -201,7 +209,9 @@ class WSGIApplication(object):
                 body = handle_func()
             else:
                 body = 'request page was not found! 404'
-                ctx.response.status = 404
+                ctx.response.status = '404 NOT FOND'
+            start_response(ctx.response.status, ctx.response.headers.items())
+
             return [body.encode('utf-8')]
         return wsgi
 #WSGI server
