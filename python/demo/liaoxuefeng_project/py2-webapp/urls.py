@@ -4,13 +4,13 @@ from transwarp.web import get, post, ctx, view
 from models.allmodels import User
 
 
-# @view('test_users.html')
+@view('test_users.html')
 @get('/')
 def test_users():
     print '000'
     users = User.all()
     # ctx.response.content_type = 'text/html'
-    return users
+    return dict(users=users)
 
 @get('/home')
 def home():

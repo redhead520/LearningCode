@@ -105,11 +105,11 @@ class Beforeware:
 
         for data in self.wrapped_app(environ, start_response):
             print '后面:可以处理返回的body数据'
+            print ctx.response.headers['Content-Type']
             print data
-            if ctx.response.headers['Content-Type'] == 'json':
-                print 'handle json data======>'
+            if ctx.response.headers['Content-Type'] == 'application/json':
                 data = json.dumps(data)
-            # start_response(ctx.response.status, ctx.response.headers.items())
+
             yield data
 
 # 中间件
@@ -155,8 +155,9 @@ def view(path):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kw):
+            ctx.response.headers['Content-Type'] = 'text/html'
             data = func(*args, **kw)
-            return
+            return ctx.template_engine(path, data)
         return wrapper
 
     return decorator
@@ -215,6 +216,7 @@ class WSGIApplication(object):
     @template_engine.setter
     def template_engine(self, engine=None):
         if engine:
+            ctx.template_engine = engine
             self._template_engine = engine
 
 
@@ -229,8 +231,7 @@ class WSGIApplication(object):
                 body = 'request page was not found! 404'
                 ctx.response.status = '404 NOT FOND'
             start_response(ctx.response.status, ctx.response.headers.items())
-
-            return [body.encode('utf-8')]
+            return [body]
         return wsgi
 #WSGI server
     # 开发模式下直接启动WSGI服务器:
