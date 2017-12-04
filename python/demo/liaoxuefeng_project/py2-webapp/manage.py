@@ -5,21 +5,15 @@ import mysql.connector
 from transwarp import db
 from models.allmodels import User
 from transwarp.web import *
-
+from conf.config import configs
 # import logging
 # # level: CRITICAL > ERROR > WARNING > INFO > DEBUG > NOTSET
 # logging.basicConfig(level=logging.DEBUG,
 #                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(process)d %(thread)d %(message)s',
 #                     datefmt='%a, %d %b %Y %H:%M:%S',
 #                  )
-db_config = {
-    'user':'root',
-    'password':'0311020045',
-    'database':'awesome',
-    'host':'162.219.127.17',
-    'port':3306
-}
-db.create_engine(**db_config)
+
+db.create_engine(**configs['db'])
 
 wsgi = WSGIApplication()
 

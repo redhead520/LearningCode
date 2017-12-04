@@ -111,6 +111,11 @@ class Model(dict):
         return str(value) if not isinstance(value, (str)) else "'{}'".format(value)
 
     @classmethod
+    def all(cls):
+        result = db.select(cls.__select__)
+        return result
+
+    @classmethod
     def select(cls, **kwargs):
         sql = cls.__select__ + ' WHERE {}'.format(','.join(map(lambda i:'{}={}'.format(i[0],Model.fmt(i[1])),kwargs.items())))
         result = db.select(sql)

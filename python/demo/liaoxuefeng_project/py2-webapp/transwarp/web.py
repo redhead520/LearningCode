@@ -6,11 +6,12 @@ import logging
 from cgi import escape
 from urlparse import parse_qs
 import json
+import exceptions
 # level: CRITICAL > ERROR > WARNING > INFO > DEBUG > NOTSET
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(process)d %(thread)d %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
-                 )
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(process)d %(thread)d %(message)s',
+#                     datefmt='%a, %d %b %Y %H:%M:%S',
+#                  )
 # 全局ThreadLocal对象：
 ctx = threading.local()
 
@@ -98,12 +99,13 @@ class Beforeware:
     def __init__(self, app):
         self.wrapped_app = app
     def __call__(self, environ, start_response):
-        print '前面'
+
         ctx.request = Request(environ)
         ctx.response = Response()
-        print '前面处理完'
+
         for data in self.wrapped_app(environ, start_response):
             print '后面:可以处理返回的body数据'
+            print data
             if ctx.response.headers['Content-Type'] == 'json':
                 print 'handle json data======>'
                 data = json.dumps(data)
@@ -117,7 +119,6 @@ class Afterware:
 
     def __call__(self, environ, start_response):
         for data in self.wrapped_app(environ, start_response):
-            print '后面'
             yield data.upper()
 
 # 定义GET:
@@ -151,7 +152,14 @@ def post(path):
 
 # 定义模板:
 def view(path):
-    pass
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            data = func(*args, **kw)
+            return
+        return wrapper
+
+    return decorator
 
 # 定义拦截器:
 def interceptor(pattern):
@@ -176,6 +184,7 @@ class Jinja2TemplateEngine(TemplateEngine):
 class WSGIApplication(object):
     def __init__(self, document_root=None, **kw):
         self.urls = {}
+        self._template_engine = None
 
     # 添加一个URL定义:
     def add_url(self, func):
@@ -183,7 +192,16 @@ class WSGIApplication(object):
         if not self.urls.has_key(key):
             self.urls[key] = func
         else:
-            raise 'error'
+            raise exceptions.StandardError('regist url functions error')
+    # 添加URL模块:
+    def add_module(self, urls):
+        for i in dir(urls):
+            try:
+                func = getattr(urls,i)
+                if hasattr(func, '__route__'):
+                    self.add_url(func)
+            except:
+                pass
 
     # 添加一个Interceptor定义:
     def add_interceptor(self, func):
@@ -192,11 +210,12 @@ class WSGIApplication(object):
     # 设置TemplateEngine:
     @property
     def template_engine(self):
-        pass
+        return self._template_engine
 
     @template_engine.setter
-    def template_engine(self, engine):
-        pass
+    def template_engine(self, engine=None):
+        if engine:
+            self._template_engine = engine
 
 
 # WSGI application
@@ -204,7 +223,6 @@ class WSGIApplication(object):
     def get_wsgi_application(self):
         def wsgi(env, start_response):
             handle_func = self.urls.get(ctx.request.handle_name)
-            print '0000000'
             if handle_func:
                 body = handle_func()
             else:

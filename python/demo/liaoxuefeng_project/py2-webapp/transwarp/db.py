@@ -167,7 +167,11 @@ def select(sql, *args):
     cursor = _db_ctx.cursor()
     try:
         cursor.execute(sql, *args)
-        result = cursor.fetchall()
+        data = cursor.fetchall()
+        keys = [k[0] for k in cursor.description]
+        result = []
+        for item in data:
+            result.append(dict(zip(keys,item)))
     except mysql.connector.Error, e:
         result = e
     return result
