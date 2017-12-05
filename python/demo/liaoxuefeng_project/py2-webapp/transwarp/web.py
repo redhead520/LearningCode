@@ -7,10 +7,24 @@ from cgi import escape
 from urlparse import parse_qs
 import json
 import exceptions
-# level: CRITICAL > ERROR > WARNING > INFO > DEBUG > NOTSET
-# logging.basicConfig(level=logging.DEBUG,
-#                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(process)d %(thread)d %(message)s',
-#                     datefmt='%a, %d %b %Y %H:%M:%S',
+import os
+from conf.config import configs
+import datetime, time
+
+# 定义MIME类型
+MIME = {
+    '.js': 'application/x-javascript',
+    '.css': 'text/css',
+    '.html': 'text/html',
+    '.jpeg': 'image/jpeg',
+    '.ico': 'application/x-ico',
+    '.svg': 'image/svg+xml',
+    '.otf': 'application/octet-stream',
+    '.eot': 'application/octet-stream',
+    '.ttf': 'application/octet-stream',
+    '.woff': 'application/x-font-woff',
+    '.woff2': 'application/x-font-woff',
+}
 #                  )
 # 全局ThreadLocal对象：
 ctx = threading.local()
@@ -37,11 +51,15 @@ class Request(object):
             params[k] = escape(v[0])
         for k, v in data.items():
             data[k] = escape(v[0])
-
+        # print '**'*20
+        # for k,v in env.items():
+        #     print k, ':', v
         self.params = params
         self.data = data
         self.path = env['PATH_INFO']
         self.method = env['REQUEST_METHOD']
+        self.content_type = env['CONTENT_TYPE']
+        self.http_accept = env['HTTP_ACCEPT']
         self.handle_name = '{}{}'.format(self.method, self.path).lower()
 
     def get(self, key, default=None):
@@ -104,22 +122,22 @@ class Beforeware:
         ctx.response = Response()
 
         for data in self.wrapped_app(environ, start_response):
-            print '后面:可以处理返回的body数据'
-            print ctx.response.headers['Content-Type']
-            print data
             if ctx.response.headers['Content-Type'] == 'application/json':
                 data = json.dumps(data)
-
             yield data
 
-# 中间件
-class Afterware:
-    def __init__(self, app):
-        self.wrapped_app = app
-
-    def __call__(self, environ, start_response):
-        for data in self.wrapped_app(environ, start_response):
-            yield data.upper()
+def datetime_filter(t):
+    delta = int(time.time() - t)
+    if delta < 60:
+        return u'1分钟前'
+    if delta < 3600:
+        return u'%s分钟前' % (delta // 60)
+    if delta < 86400:
+        return u'%s小时前' % (delta // 3600)
+    if delta < 604800:
+        return u'%s天前' % (delta // 86400)
+    dt = datetime.fromtimestamp(t)
+    return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
 # 定义GET:
 def get(path):
@@ -150,6 +168,22 @@ def post(path):
 
     return decorator
 
+# 处理静态资源
+def staticFileRoute(path):
+    try:
+        ctx.response.headers['Content-Type'] = MIME[os.path.splitext(path)[1]]
+    except:
+        ctx.response.headers['Content-Type'] = ctx.request.content_type
+    static_path = os.path.join(configs['www'],path.lstrip('/'))
+    print '+'*20
+    try:
+        with open(static_path) as f:
+            data = f.read()
+    except:
+        data = ''
+
+    return data
+
 # 定义模板:
 def view(path):
     def decorator(func):
@@ -157,7 +191,7 @@ def view(path):
         def wrapper(*args, **kw):
             ctx.response.headers['Content-Type'] = 'text/html'
             data = func(*args, **kw)
-            return ctx.template_engine(path, data)
+            return WSGIApplication.template_engine(path, data)
         return wrapper
 
     return decorator
@@ -180,12 +214,15 @@ class Jinja2TemplateEngine(TemplateEngine):
     def __call__(self, path, model):
         return self._env.get_template(path).render(**model).encode('utf-8')
 
+    def add_filter(self, name, filter_fn):
+        self._env.filters[name] = filter_fn
+
 
 # WSGI
 class WSGIApplication(object):
+    template_engine = None
     def __init__(self, document_root=None, **kw):
         self.urls = {}
-        self._template_engine = None
 
     # 添加一个URL定义:
     def add_url(self, func):
@@ -209,15 +246,18 @@ class WSGIApplication(object):
         pass
 
     # 设置TemplateEngine:
+
     @property
-    def template_engine(self):
-        return self._template_engine
+    @classmethod
+    def template_engine(cls):
+        return cls._template_engine
 
     @template_engine.setter
-    def template_engine(self, engine=None):
+    @classmethod
+    def template_engine(cls, engine=None):
         if engine:
             ctx.template_engine = engine
-            self._template_engine = engine
+            cls._template_engine = engine
 
 
 # WSGI application
@@ -225,11 +265,12 @@ class WSGIApplication(object):
     def get_wsgi_application(self):
         def wsgi(env, start_response):
             handle_func = self.urls.get(ctx.request.handle_name)
+            # urls定义过的route访问
             if handle_func:
                 body = handle_func()
-            else:
-                body = 'request page was not found! 404'
-                ctx.response.status = '404 NOT FOND'
+            # 网站资源访问（www目录）
+            elif ctx.request.method == 'GET':
+                body = staticFileRoute(ctx.request.path)
             start_response(ctx.response.status, ctx.response.headers.items())
             return [body]
         return wsgi

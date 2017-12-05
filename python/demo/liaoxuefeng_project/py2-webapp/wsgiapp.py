@@ -15,7 +15,8 @@ wsgi.add_module(urls)
 
 # 初始化jinja2模板引擎:
 template_engine = Jinja2TemplateEngine(os.path.join(os.path.dirname(os.path.abspath(__file__)), configs['template_url']))
-wsgi.template_engine = template_engine
+template_engine.add_filter('datetime', datetime_filter)
+WSGIApplication.template_engine = template_engine
 
 if __name__ == '__main__':
     # 开发模式（Development Mode）

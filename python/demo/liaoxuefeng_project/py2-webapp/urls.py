@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from transwarp.web import get, post, ctx, view
-from models.allmodels import User
+from models.allmodels import User, Blog, Comment
 
 
-@view('test_users.html')
+@view('blogs.html')
 @get('/')
-def test_users():
-    print '000'
-    users = User.all()
+def index():
+    blogs = Blog.all()
+    user = User.all()[0]
     # ctx.response.content_type = 'text/html'
-    return dict(users=users)
+    return dict(blogs=blogs, user=user)
 
 @get('/home')
 def home():

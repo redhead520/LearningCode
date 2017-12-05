@@ -12,5 +12,7 @@ configs = {
         'port':3306
     },
     'root':os.path.dirname(os.path.abspath('.')),
+    'www':os.path.join(os.path.abspath('.'),'www'),
+    'static':os.path.join(os.path.abspath('.'),'www','static'),
     'template_url': os.path.join('www','templates')
 }
