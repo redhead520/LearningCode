@@ -116,16 +116,26 @@ class Model(dict):
         return result
 
     @classmethod
+    def find_first(cls,**kwargs):
+        sql = cls.__select__ + ' WHERE {}'.format(
+            ','.join(map(lambda i: '{}={}'.format(i[0], Model.fmt(i[1])), kwargs.items())))
+        result = db.select(sql)
+        print 'ppp'*10
+        print sql
+        print result
+        return None if not result else result[0]
+
+    @classmethod
     def select(cls, **kwargs):
         sql = cls.__select__ + ' WHERE {}'.format(','.join(map(lambda i:'{}={}'.format(i[0],Model.fmt(i[1])),kwargs.items())))
         result = db.select(sql)
         return result
 
+
     def save(self):
         fields = self.keys()
         values = map(lambda f: Model.fmt(self[f]), fields)
         sql = self.__insert__ + ' ({}) VALUES ({})'.format(','.join(fields), ','.join(values))
-        print sql
         result = db.insert(sql)
         return result
 

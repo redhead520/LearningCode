@@ -10,6 +10,7 @@ import exceptions
 import os
 from conf.config import configs
 import datetime, time
+import re
 
 # 定义MIME类型
 MIME = {
@@ -30,8 +31,18 @@ MIME = {
 ctx = threading.local()
 
 # HTTP错误类:
-class HttpError(Exception):
-    pass
+def HttpError(Exception):
+    return exceptions
+
+def APIError(*args):
+    return exceptions.ValueError('{}'.format(str(args)))
+
+def APIValueError(value):
+    return exceptions.ValueError('you input value({}) was wrong!'.format(value))
+
+def getParameter(str):
+    r = re.findall(r'name="(.*?)"\r\n\r\n(.*?)\r\n', str, re.S)
+    return dict(r) if r else parse_qs(str)
 
 # request对象:
 class Request(object):
@@ -44,16 +55,16 @@ class Request(object):
             request_body_size = 0
         request_body = env['wsgi.input'].read(request_body_size)
         params = parse_qs(env['QUERY_STRING'])
-        data = parse_qs(request_body)
-
+        data = getParameter(request_body)
         # 转义，防止脚本注入
         for k, v in params.items():
             params[k] = escape(v[0])
         for k, v in data.items():
-            data[k] = escape(v[0])
+            data[k] = escape(v if type(v) == str else v[0])
         # print '**'*20
         # for k,v in env.items():
         #     print k, ':', v
+        # print '**' * 20
         self.params = params
         self.data = data
         self.path = env['PATH_INFO']
@@ -66,8 +77,11 @@ class Request(object):
         return self.params.get(key, default)
 
     # 返回key-value的dict:
-    def input(self):
-        return self.data
+    def input(self, **kwargs):
+        print self.data
+        for k in kwargs.keys():
+            kwargs[k] = self.data.get(k) if self.data.get(k) else kwargs[k]
+        return kwargs if kwargs != {} else self.data
 
     # 返回URL的path:
     @property
@@ -99,7 +113,10 @@ class Response(object):
 
     # 设置Cookie:
     def set_cookie(self, name, value, max_age=None, expires=None, path='/'):
-        pass
+
+        self.headers['Referer'] = 'http://127.0.0.1'
+        self.headers['Cookie'] = '{}={}'.format(name, value)
+        self.headers['Expires'] = str(int(time.time() + max_age))
 
     # 设置status:
     @property
@@ -120,10 +137,7 @@ class Beforeware:
 
         ctx.request = Request(environ)
         ctx.response = Response()
-
         for data in self.wrapped_app(environ, start_response):
-            if ctx.response.headers['Content-Type'] == 'application/json':
-                data = json.dumps(data)
             yield data
 
 def datetime_filter(t):
@@ -139,17 +153,46 @@ def datetime_filter(t):
     dt = datetime.fromtimestamp(t)
     return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
+def getHTML(route, template_path):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            ctx.response.headers['Content-Type'] = 'text/html'
+            data = func(*args, **kw)
+            return WSGIApplication.template_engine(template_path, data)
+        wrapper.__method__ = 'GET'
+        wrapper.__route__ = route
+        return wrapper
+    return decorator
+
+# 定义API
+def api(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kwargs):
+        try:
+            r = json.dumps(func(*args, **kwargs))
+        except APIError, e:
+            r = json.dumps(dict(error=e.error, data=e.data, message=e.message))
+        except Exception, e:
+            r = json.dumps(dict(error='internalerror', data=e.__class__.__name__, message=e.message))
+
+        ctx.response.content_type = 'application/json'
+
+        return r
+    return _wrapper
+
 # 定义GET:
+
 def get(path):
     '''
         Define decorator @get('/path')
     '''
 
     def decorator(func):
+        @api
         @functools.wraps(func)
         def wrapper(*args, **kw):
             return func(*args, **kw)
-
         wrapper.__method__ = 'GET'
         wrapper.__route__ = path
         return wrapper
@@ -159,13 +202,13 @@ def get(path):
 # 定义POST:
 def post(path):
     def decorator(func):
+        @api
         @functools.wraps(func)
         def wrapper(*args, **kw):
             return func(*args, **kw)
         wrapper.__method__ = 'POST'
         wrapper.__route__ = path
         return wrapper
-
     return decorator
 
 # 处理静态资源
@@ -175,26 +218,14 @@ def staticFileRoute(path):
     except:
         ctx.response.headers['Content-Type'] = ctx.request.content_type
     static_path = os.path.join(configs['www'],path.lstrip('/'))
-    print '+'*20
     try:
         with open(static_path) as f:
             data = f.read()
     except:
-        data = ''
-
+        ctx.response.status = '404 ERROR'
+        data = 'NOT FOUND 404'
     return data
 
-# 定义模板:
-def view(path):
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kw):
-            ctx.response.headers['Content-Type'] = 'text/html'
-            data = func(*args, **kw)
-            return WSGIApplication.template_engine(path, data)
-        return wrapper
-
-    return decorator
 
 # 定义拦截器:
 def interceptor(pattern):
