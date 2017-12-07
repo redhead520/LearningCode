@@ -7,7 +7,7 @@ use awesome;
 grant select, insert, update, delete on awesome.* to 'root'@'localhost' identified by 'root';
 
 create table users (
-    `id` varchar(50) not null,
+    `id` int UNSIGNED not null AUTO_INCREMENT,
     `name` varchar(50) not null,
     `email` varchar(50) not null,
     `password` varchar(50) not null,
@@ -20,7 +20,7 @@ create table users (
 ) engine=innodb default charset=utf8;
 
 create table blogs (
-    `id` varchar(50) not null,
+    `id` int UNSIGNED not null AUTO_INCREMENT,
     `user_id` varchar(50) not null,
     `user_name` varchar(50) not null,
     `user_image` varchar(500) not null,
@@ -33,7 +33,7 @@ create table blogs (
 ) engine=innodb default charset=utf8;
 
 create table comments (
-    `id` varchar(50) not null,
+    `id` int UNSIGNED not null AUTO_INCREMENT,
     `blog_id` varchar(50) not null,
     `user_id` varchar(50) not null,
     `user_name` varchar(50) not null,

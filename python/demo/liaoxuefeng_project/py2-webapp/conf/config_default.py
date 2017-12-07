@@ -14,5 +14,9 @@ configs = {
     'root':os.path.dirname(os.path.abspath('.')),
     'www':os.path.join(os.path.abspath('.'),'www'),
     'static':os.path.join(os.path.abspath('.'),'www','static'),
-    'template_url': os.path.join('www','templates')
+    'template_url': os.path.join('www','templates'),
+    'cookie':{
+        'sccretName': 'aw_id',
+        'secretKey':'#@?ddsed'
+    }
 }

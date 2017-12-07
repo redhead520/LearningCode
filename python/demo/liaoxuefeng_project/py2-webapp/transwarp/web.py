@@ -11,6 +11,11 @@ import os
 from conf.config import configs
 import datetime, time
 import re
+import hashlib
+
+_COOKIE_NAME = configs["cookie"]["sccretName"]
+_COOKIE_KEY = configs["cookie"]["secretKey"]
+GMT_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
 
 # 定义MIME类型
 MIME = {
@@ -40,8 +45,8 @@ def APIError(*args):
 def APIValueError(value):
     return exceptions.ValueError('you input value({}) was wrong!'.format(value))
 
-def getParameter(str):
-    r = re.findall(r'name="(.*?)"\r\n\r\n(.*?)\r\n', str, re.S)
+def getParameter(s):
+    r = re.findall(r'name="(.*?)"\r\n\r\n(.*?)\r\n', s, re.S)
     return dict(r) if r else parse_qs(str)
 
 # request对象:
@@ -67,11 +72,29 @@ class Request(object):
         # print '**' * 20
         self.params = params
         self.data = data
+        self.user = None
+        self.cookie = self.getCookie(env['HTTP_COOKIE'])
         self.path = env['PATH_INFO']
         self.method = env['REQUEST_METHOD']
         self.content_type = env['CONTENT_TYPE']
         self.http_accept = env['HTTP_ACCEPT']
         self.handle_name = '{}{}'.format(self.method, self.path).lower()
+
+    def getCookie(self, s):
+        cookies = {x.split('=')[0].strip(): x.split('=')[1].strip() for x in s.split(';') if x.find('=')}
+        if cookies.has_key(_COOKIE_NAME):
+            cookie = cookies.get(_COOKIE_NAME)
+            cookie_msg = cookie.split('-')
+            if len(cookie_msg) == 3:
+                try:
+                    if float(cookie_msg[1]) > time.time():
+                        self.user_id = cookie_msg[0]
+                        self.expires = cookie_msg[1]
+                        self.cookie_md5 = cookie_msg[2]
+                        return cookie
+                except:
+                    pass
+        return cookies.get(_COOKIE_NAME)
 
     def get(self, key, default=None):
         return self.params.get(key, default)
@@ -105,18 +128,17 @@ class Response(object):
     def __init__(self):
         self.__status = '200 OK'
         self.headers = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'text/plain'
         }
 
     def set_header(self, key, value):
         self.headers[key] = value
 
     # 设置Cookie:
-    def set_cookie(self, name, value, max_age=None, expires=None, path='/'):
-
+    def set_cookie(self, name, value, expires=None, path='/'):
         self.headers['Referer'] = 'http://127.0.0.1'
         self.headers['Cookie'] = '{}={}'.format(name, value)
-        self.headers['Expires'] = str(int(time.time() + max_age))
+        self.headers['Expires'] = time.strftime(GMT_FORMAT,time.localtime(float(expires)))
 
     # 设置status:
     @property
@@ -128,6 +150,12 @@ class Response(object):
           self.__status = int(value)
         except:
             pass
+
+# 计算加密cookie:
+def make_signed_cookie(id, password, max_age=604800, expires=None):
+    expires = int(time.time() + max_age) if expires == None else expires
+    L = [str(id), str(expires), hashlib.md5('%s-%s-%s-%s' % (id, password, expires, _COOKIE_KEY)).hexdigest()]
+    return '-'.join(L), expires
 
 # 中间件
 class Beforeware:
@@ -175,7 +203,6 @@ def api(func):
             r = json.dumps(dict(error=e.error, data=e.data, message=e.message))
         except Exception, e:
             r = json.dumps(dict(error='internalerror', data=e.__class__.__name__, message=e.message))
-
         ctx.response.content_type = 'application/json'
 
         return r
@@ -211,6 +238,18 @@ def post(path):
         return wrapper
     return decorator
 
+# 定义delete:
+def delete(path):
+    def decorator(func):
+        @api
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            return func(*args, **kw)
+        wrapper.__method__ = 'DELETE'
+        wrapper.__route__ = path
+        return wrapper
+    return decorator
+
 # 处理静态资源
 def staticFileRoute(path):
     try:
@@ -228,8 +267,15 @@ def staticFileRoute(path):
 
 
 # 定义拦截器:
-def interceptor(pattern):
-    pass
+def interceptor(*patterns):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            return func(*args, **kw)
+        wrapper.__type__ = 'interceptor'
+        wrapper.__patterns__ = patterns
+        return wrapper
+    return decorator
 
 # 定义模板引擎:
 class TemplateEngine(object):
@@ -254,9 +300,12 @@ class WSGIApplication(object):
     template_engine = None
     def __init__(self, document_root=None, **kw):
         self.urls = {}
+        self.Interceptor = {}
 
     # 添加一个URL定义:
     def add_url(self, func):
+        if not hasattr(func, '__method__'):
+            return
         key = '{}{}'.format(func.__method__, func.__route__).lower()
         if not self.urls.has_key(key):
             self.urls[key] = func
@@ -274,7 +323,11 @@ class WSGIApplication(object):
 
     # 添加一个Interceptor定义:
     def add_interceptor(self, func):
-        pass
+        if not hasattr(func, '__type__'):
+            return
+        if func.__type__ == 'interceptor':
+            for pattern in func.__patterns__:
+                self.Interceptor[pattern] = [func] if not self.Interceptor.has_key(pattern) else self.Interceptor[pattern].append(func)
 
     # 设置TemplateEngine:
 
@@ -298,10 +351,21 @@ class WSGIApplication(object):
             handle_func = self.urls.get(ctx.request.handle_name)
             # urls定义过的route访问
             if handle_func:
-                body = handle_func()
+                Interceptors = self.Interceptor.get(handle_func.__route__)
+                if Interceptors:
+                    for interceptor in Interceptors:
+                        body = interceptor(handle_func)
+                else:
+                    body = handle_func()
+                print body
+                if body == None:
+                    body = {'result': 'success'}
             # 网站资源访问（www目录）
             elif ctx.request.method == 'GET':
                 body = staticFileRoute(ctx.request.path)
+            else:
+                ctx.response.content_type = 'application/json'
+                body = json.dumps({'result': 'error','message':'no the api({}) handle function'.format(ctx.request.handle_name)})
             start_response(ctx.response.status, ctx.response.headers.items())
             return [body]
         return wsgi

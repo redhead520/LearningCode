@@ -1,0 +1,110 @@
+{% extends '__base__.html' %}
+
+{% block title %}登入{% endblock %}
+
+{% block beforehead %}
+
+<script>
+function check_form(thisform) {
+    $('#password').val(md5($('#password1').val()).toString());
+//    form = document.regist_form
+    form = thisform
+    error_tips = $('#error-label')[0]
+    data = {
+        email: form.email.value,
+        password: form.password.value
+    }
+    error_tips.hidden = true
+
+
+    $.ajax('http://127.0.0.1:9000/api/authenticate', {
+        type: "POST",
+        data:data,
+        crossDomainma:true,
+        success:success_cb,
+    })
+    return false;
+}
+
+function success_cb(res, textStatus, jqXHR) {
+    console.log('success')
+    res = JSON.parse(res)
+    if(res.message) {
+        error_tips.innerText = res.message
+        error_tips.hidden = false
+    } else {
+        cookie = jqXHR.getResponseHeader('cookie')
+        expires = jqXHR.getResponseHeader('expires')
+        if (cookie) {
+            document.cookie = cookie + ';' + 'expires'
+        }
+
+        window.location.href="http://127.0.0.1:9000"
+    }
+
+
+
+//    $.ajax({
+//    type: 'HEAD', // 获取头信息，type=HEAD即可
+//    url : window.location.href,
+//    //url:"http://device.qq.com/cgi-bin/device_cgi/remote_bind_get_Verify",
+//    complete: function( xhr,data ){
+//        // 获取相关Http Response header
+//        var wpoInfo = {
+//            // 服务器端时间
+//            "date" : xhr.getResponseHeader('Date'),
+//            // 如果开启了gzip，会返回这个东西
+//            "contentEncoding" : xhr.getResponseHeader('Content-Encoding'),
+//            // keep-alive ？ close？
+//            "connection" : xhr.getResponseHeader('Connection'),
+//            // 响应长度
+//            "contentLength" : xhr.getResponseHeader('content-length'),
+//            // 服务器类型，apache？lighttpd？
+//            "server" : xhr.getResponseHeader('Server'),
+//            "vary" : xhr.getResponseHeader('Vary'),
+//            "transferEncoding" : xhr.getResponseHeader('Transfer-Encoding'),
+//            // text/html ? text/xml?
+//            "contentType" : xhr.getResponseHeader('Content-Type'),
+//            "cacheControl" : xhr.getResponseHeader('Cache-Control'),
+//            // 生命周期？
+//            "exprires" : xhr.getResponseHeader('Exprires'),
+//            "lastModified" : xhr.getResponseHeader('Last-Modified')
+//        };
+//        console.log(xhr.getAllResponseHeaders());
+//        console.log(wpoInfo)
+//    }
+//});
+}
+
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="uk-width-1-1@m">
+    <h1>登入</h1>
+    <h5 id="error-label" hidden style="color:#f00">Error:</h5>
+
+    <form id="form-register" name="login_form" class="uk-form uk-form-stacked" onsubmit="return check_form(this);">
+        <div class="uk-alert uk-alert-danger uk-hidden"></div>
+        <div class="uk-form-row">
+            <label class="uk-form-label">电子邮件:</label>
+            <div class="uk-form-controls">
+                <input name="email" type="text" class="uk-width-1-1" required>
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <label class="uk-form-label">输入口令:</label>
+            <div class="uk-form-controls">
+                <input id="password1" type="password" class="uk-width-1-1" required>
+                <input id="password" name="password" type="hidden">
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <button type="submit"  class="uk-button uk-button-primary"><i class="uk-icon-user"></i> 登入</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

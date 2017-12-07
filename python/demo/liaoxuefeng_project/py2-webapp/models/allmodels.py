@@ -19,7 +19,7 @@ class User(Model):
 class Blog(Model):
     __table__ = 'blogs'
 
-    id = StringField(primary_key=True, auto_increment=True, size=50)
+    id = IntegerField(primary_key=True, auto_increment=True)
     user_id = StringField(updatable=False, size=50)
     user_name = StringField(50)
     user_image = StringField(500)
@@ -31,7 +31,7 @@ class Blog(Model):
 class Comment(Model):
     __table__ = 'comments'
 
-    id = StringField(primary_key=True, auto_increment=True, size=50)
+    id = IntegerField(primary_key=True, auto_increment=True)
     blog_id = StringField(updatable=False, size=50)
     user_id = StringField(updatable=False, size=50)
     user_name = StringField(50)
