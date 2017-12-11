@@ -39,6 +39,14 @@
                 success:fn
             });
         }
+        function patchApi(url, data, fn) {
+            return $.ajax(host + url, {
+                type: "PATCH",
+                data: data,
+                crossDomainma:true,
+                success:fn
+            });
+        }
         function showError(err) {
             alert(err)
         }

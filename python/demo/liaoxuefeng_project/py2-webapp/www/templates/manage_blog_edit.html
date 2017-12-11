@@ -5,10 +5,10 @@
 {% block beforehead %}
 
 <script>
-var
-    action = '{{ action }}',
+var action = '{{ action }}',
     is_idet = '{{ isedit }}';
-    submit_bt = is_idet ? '保存' : '提交'
+var submit_bt = is_idet ? '保存' : '提交'
+
 
 
 var vm;
@@ -17,6 +17,8 @@ $(function () {
     vm = new Vue({
         el: '#form-blog',
         data: {
+            btn:is_idet ? '保存' : '提交',
+            id: is_idet ? '{{blog.id}}' : 0,
             name: '',
             summary: '',
             content: ''
@@ -28,25 +30,37 @@ $(function () {
                     summary: this.summary,
                     content: this.content,
                 }
-                console.log(this.$data)
-                postApi('/api/blogs', data, function (res, message) {
-                    res = JSON.parse(res)
-                    console.log(res)
-                    if (res.status == 0) {
-                        return showError(res.message);
-                    }
+                console.log(this.content)
+                if (is_idet) {
+                    data.id = this.id
+                    console.log(data)
+                    patchApi('/api/blogs', data, function (res, message) {
+                        res = JSON.parse(res)
+                        console.log(res)
+                        if (res.status == 0) {
+                            return showError(res.message);
+                        }
+                        location.assign('/manage/blogs')
+                    });
+                }else {
+                    postApi('/api/blogs', data, function (res, message) {
+                        res = JSON.parse(res)
+                        console.log(res)
+                        if (res.status == 0) {
+                            return showError(res.message);
+                        }
+                        location.assign('/manage/blogs')
+                    });
+                }
 
-                    location.assign('/manage/blogs')
-
-                });
             }
         },
         beforeMount () {
             console.log('beforeMount')
             if (is_idet) {
-                this.name = '{{name}}'
-                this.summary = '{{summary}}'
-                this.content = '{{content}}'
+                this.name = '{{blog.name}}'
+                this.summary = '{{blog.summary}}'
+                this.content = document.getElementById('content').innerText
             }
 
         }
@@ -68,11 +82,12 @@ $(function () {
             </div>
 
             <div class="uk-margin">
-                <textarea class="uk-textarea" v-model="content" rows="8" placeholder="内容"></textarea>
+                <textarea class="uk-textarea" v-model="content" rows="15"  placeholder="内容"></textarea>
             </div>
             <div class="uk-margin">
-                 <button type="submit" class="uk-button uk-button-primary">提交</button>
+                 <button type="submit" class="uk-button uk-button-primary" v-text="btn"></button>
             </div>
+            <pre id="content" hidden>{{ blog.content }}</pre>
         </fieldset>
     </form>
 </div>

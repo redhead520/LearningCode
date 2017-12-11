@@ -12,6 +12,7 @@ from conf.config import configs
 import datetime, time
 import re
 import hashlib
+from models.allmodels import User
 
 _COOKIE_NAME = configs["cookie"]["sccretName"]
 _COOKIE_KEY = configs["cookie"]["secretKey"]
@@ -219,8 +220,15 @@ def getHTML(route, template_path):
         @functools.wraps(func)
         def wrapper(*args, **kw):
             ctx.response.headers['Content-Type'] = 'text/html'
+            if hasattr(ctx.request, 'user_id') and ctx.request.user == None:
+                user = User.find_first(id=ctx.request.user_id)
+                if user:
+                    md5 = hashlib.md5('%s-%s-%s-%s' % (
+                    ctx.request.user_id, user['password'], ctx.request.expires, _COOKIE_KEY)).hexdigest()
+                    if md5 == ctx.request.cookie_md5:
+                        ctx.request.user = user
             data = func(*args, **kw)
-            print '=======> HTML:{}'.format(data)
+            # print '=======> HTML:{}'.format(data)
             try:
                 HTML = WSGIApplication.template_engine(template_path, data)
             except Exception, e:
@@ -277,6 +285,18 @@ def post(path):
         return wrapper
     return decorator
 
+# 定义PATCH:
+def patch(path):
+    def decorator(func):
+        @api
+        @functools.wraps(func)
+        def wrapper(*args, **kw):
+            return func(*args, **kw)
+        wrapper.__method__ = 'PATCH'
+        wrapper.__route__ = path
+        return wrapper
+    return decorator
+
 # 定义delete:
 def delete(path):
     def decorator(func):
@@ -306,15 +326,16 @@ def staticFileRoute(path):
 
 
 # 定义拦截器:
-def interceptor(level=10, startswith=[], absolute=[]):
+def interceptor(level=10, startswith=[], absolute=[], html=False):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kw):
             return func(*args, **kw)
         wrapper.__type__ = 'interceptor'
-        wrapper.level = level
-        wrapper.startswith_paths = startswith
-        wrapper.absolute_paths = absolute
+        wrapper.level = level                  # 拦截优先级 0为最高
+        wrapper.startswith_paths = startswith  # 请求url以此地址开头时拦截
+        wrapper.absolute_paths = absolute      # 请求url完全匹配此地址时拦截
+        wrapper.__html___ = html                    # 请求html页面时是否拦截
         return wrapper
     return decorator
 
@@ -351,7 +372,8 @@ class WSGIApplication(object):
         if not self.urls.has_key(key):
             self.urls[key] = func
         else:
-            raise exceptions.StandardError('regist url functions error')
+            # print 'you has double view functions:{}'.format(key)
+            raise exceptions.EnvironmentError('regist url functions error')
     # 添加URL模块:
     def add_module(self, urls):
         for i in dir(urls):
@@ -404,6 +426,8 @@ class WSGIApplication(object):
                         if len(params) > 0:
                             route_fn = lambda :path_fn(*params)
                             break
+                print route_fn_name
+                print route_fn
             if route_fn:
                 body = route_fn()
                 if body == None:

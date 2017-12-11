@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from transwarp.web import get, post, delete, ctx, getHTML,APIValueError, APIError, make_signed_cookie, interceptor
+from transwarp.web import get, post, patch, delete, ctx, getHTML,APIValueError, APIError, make_signed_cookie, interceptor
 from models.allmodels import User, Blog, Comment
 import re
 import hashlib
@@ -15,10 +15,16 @@ _COOKIE_KEY = configs["cookie"]["secretKey"]
 
 @getHTML('/', 'blogs.html')
 def index():
+    print '>>>>>>>>>>>>>>>blog all'
     blogs = Blog.all()
-    print blogs
-    print ctx.request.user
     return dict(blogs=blogs, user=ctx.request.user)
+
+@getHTML('/blog/(\d+)', 'blog_content.html')
+def blog(id):
+    blog = Blog.find_first(id=id)
+    print blog
+    print ctx.request.user
+    return dict(blog=blog, user=ctx.request.user)
 
 @getHTML('/register', 'register.html')
 def register():
@@ -44,9 +50,9 @@ def create_blogs():
 @getHTML('/manage/blogs/edit/(\d+)','manage_blog_edit.html')
 def edit_blogs(id=0):
     print '2222222'*10
-    print id
     blog = Blog.find_first(id=id)
-    return dict(action=u'编辑日志', name=blog['name'],summary=blog['summary'],content=blog['content'], isedit=True, user=ctx.request.user)
+    print blog['content']
+    return dict(action=u'编辑日志',blog=blog, isedit=True, user=ctx.request.user)
 
 
 @get('/api/users')
@@ -124,8 +130,8 @@ def api_get_blogs():
 def api_create_blog():
     i = ctx.request.input(name='', summary='', content='')
     name = i['name'].strip()
-    summary = i['summary'].strip()
-    content = i['content'].strip()
+    summary = i['summary']
+    content = i['content']
     if not name:
         raise APIValueError('name', 'name cannot be empty.')
     if not summary:
@@ -137,11 +143,33 @@ def api_create_blog():
     blog = Blog(user_id=user['id'], user_name=user['name'],user_image=user['image'], name=name, summary=summary, content=content)
     print blog
     result = blog.save()
+    return blog
 
+@patch('/api/blogs')
+def api_update_blog():
+    i = ctx.request.input(id='', name='', summary='', content='')
+    print '============update'
+    id = i['id'].strip()
+    name = i['name'].strip()
+    summary = i['summary']
+    content = i['content']
+    if not id:
+        raise APIValueError('id', 'id cannot be empty.')
+    if not name:
+        raise APIValueError('name', 'name cannot be empty.')
+    if not summary:
+        raise APIValueError('summary', 'summary cannot be empty.')
+    if not content:
+        raise APIValueError('content', 'content cannot be empty.')
+    user = ctx.request.user
+    print 'update blogs:{}=========>'.format(id)
+    blog = Blog(name=name, summary=summary, content=content)
+    print blog
+    result = blog.update(id=int(id))
     return blog
 
 # 拦截器 优先级leve 0 (顶级)
-@interceptor(level=0,startswith=['/manage','/api'], absolute=['/'])
+@interceptor(level=0,startswith=['/manage','/api'], absolute=['/'], html=True)
 def user_interceptor(next):
     if hasattr(ctx.request, 'user_id') and ctx.request.user == None:
         user = User.find_first(id=ctx.request.user_id)
