@@ -15,9 +15,34 @@
     <script src="/static/js/md5.js"></script>
     <script src="/static/js/uikit.min.js"></script>
     <script src="/static/js/uikit-icons.min.js"></script>
+    <script src="https://unpkg.com/vue"></script>
     <!--<script src="https://cdn.bootcss.com/uikit/3.0.0-beta.35/js/uikit.min.js"></script>-->
     <!--<script src="https://cdn.bootcss.com/uikit/3.0.0-beta.35/js/uikit-icons.min.js"></script>-->
     {% block beforehead %}<!-- before head  -->{% endblock %}
+    <script>
+        var host = 'http://127.0.0.1:9000';
+        function postApi(url, data, fn) {
+            return $.ajax(host + url, {
+                type: "POST",
+                data: data,
+                crossDomainma:true,
+                success:fn
+            });
+        }
+        function getApi(url, fn) {
+            return $.get(host + url, fn)
+        }
+        function deleteApi(url, fn) {
+           return $.ajax(host + url, {
+                type: "DELETE",
+                crossDomainma:true,
+                success:fn
+            });
+        }
+        function showError(err) {
+            alert(err)
+        }
+    </script>
     <style>
         .head_line {
             line-height:50px;
@@ -58,7 +83,7 @@
                                 <a href="#0"><i class="uk-icon-user"  uk-icon="icon: user"></i> {{ user.name }}</a>
                                 <div uk-dropdown class="uk-dropdown-navbar">
                                     <ul class="uk-nav ">
-                                        <li><a href="/signout"><i class="uk-icon-sign-out"  uk-icon="icon: sign-out"></i> 登出</a></li>
+                                        <li><a  onclick="signout()"><i class="uk-icon-sign-out"  uk-icon="icon: sign-out"></i> 登出</a></li>
                                     </ul>
                                 </div>
                             </li>
@@ -74,7 +99,26 @@
 
         </div>
     </nav>
+    <script>
+        function signout() {
+            deleteApi('/api/authenticate', success_cb);
+            return false;
+        }
 
+        function success_cb(res, textStatus, jqXHR) {
+            res = JSON.parse(res)
+            if (res.status) {
+                cookie = jqXHR.getResponseHeader('cookie')
+                expires = jqXHR.getResponseHeader('expires')
+                console.log(cookie)
+                if (cookie) {
+                    document.cookie = cookie + ';' + 'expires'
+                    window.location.href = "http://127.0.0.1:9000"
+                }
+            }
+        }
+
+    </script>
 
     <div class="uk-container uk-container-center">
         <div class="uk-grid">
@@ -94,7 +138,7 @@
                     <a target="_blank" href="#" class="uk-icon-button uk-icon-linkedin-square"  uk-icon="icon: facebook"></a>
                     <a target="_blank" href="#" class="uk-icon-button uk-icon-twitter"  uk-icon="icon: twitter"></a>
                 </p>
-                <p>Powered by <a href="#">Awesome Python Webapp</a>. Copyright &copy; 2014. [<a href="/manage/" target="_blank">Manage</a>]</p>
+                <p>Powered by <a href="#">Awesome Python Webapp</a>. Copyright &copy; 2017. [<a href="/manage/blogs" target="_blank">Manage</a>]</p>
                 <p><a href="http://www.liaoxuefeng.com/" target="_blank">www.liaoxuefeng.com</a>. All rights reserved.</p>
                 <a target="_blank" href="#"><i class="uk-icon-html5"  uk-icon="icon: html5" style="font-size:64px; color: #444;"></i></a>
             </div>

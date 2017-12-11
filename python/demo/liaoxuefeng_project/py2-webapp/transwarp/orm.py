@@ -108,22 +108,54 @@ class Model(dict):
     # 格式化 field的值，如果是string，则添加''
     @staticmethod
     def fmt(value):
-        return str(value) if not isinstance(value, (str)) else "'{}'".format(value)
+        if isinstance(value, (unicode)):
+            value = str(value.encode('utf-8'))
+        return str(value) if not isinstance(value, (str,unicode)) else "'{}'".format(value)
 
     @classmethod
     def all(cls):
         result = db.select(cls.__select__)
         return result
+    @classmethod
+    def count_all(cls):
+        sql = 'SELECT count(*) FROM {}'.format(cls.__table__)
+        result = db.select(sql)[0]['count(*)']
+        return result
+
+    # @staticmethod
+    # def all_count(cls):
+    #     print 'mMMMMMMMMMMMMM'
+    #     # result = db.select()
+    #     return ''
 
     @classmethod
     def find_first(cls,**kwargs):
         sql = cls.__select__ + ' WHERE {}'.format(
             ','.join(map(lambda i: '{}={}'.format(i[0], Model.fmt(i[1])), kwargs.items())))
         result = db.select(sql)
-        print 'ppp'*10
-        print sql
-        print result
         return None if not result else result[0]
+
+
+    @classmethod
+    def find_by(cls, group=None,having=None, order=None,limit=None,offset=None, **kwargs):
+        sql = cls.__select__
+        if kwargs != {}:
+            sql = sql + ' WHERE {}'.format(
+            ','.join(map(lambda i: '{}={}'.format(i[0], Model.fmt(i[1])), kwargs.items())))
+
+        if group:
+            sql = sql + ' GROUP BY ' + group
+        if having:
+            sql = sql + ' HAVING ' + having
+        if order:
+            sql = sql + ' ORDER BY ' + order
+        if limit:
+            sql = sql + ' LIMIT ' + limit
+        if offset:
+            sql = sql + ' OFFSET ' + offset
+        print sql
+        result = db.select(sql)
+        return result
 
     @classmethod
     def select(cls, **kwargs):
@@ -135,6 +167,9 @@ class Model(dict):
     def save(self):
         fields = self.keys()
         values = map(lambda f: Model.fmt(self[f]), fields)
+        print '>>>>>>>>save'
+        print fields
+        print values
         sql = self.__insert__ + ' ({}) VALUES ({})'.format(','.join(fields), ','.join(values))
         result = db.insert(sql)
         return result

@@ -16,13 +16,8 @@ function check_form(thisform) {
     }
     error_tips.hidden = true
 
-
-    $.ajax('http://127.0.0.1:9000/api/authenticate', {
-        type: "POST",
-        data:data,
-        crossDomainma:true,
-        success:success_cb,
-    })
+    console.log(data)
+    postApi('/api/authenticate', data,success_cb)
     return false;
 }
 

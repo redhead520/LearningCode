@@ -47,7 +47,7 @@ def APIValueError(value):
 
 def getParameter(s):
     r = re.findall(r'name="(.*?)"\r\n\r\n(.*?)\r\n', s, re.S)
-    return dict(r) if r else parse_qs(str)
+    return dict(r) if r else parse_qs(s)
 
 # request对象:
 class Request(object):
@@ -70,7 +70,8 @@ class Request(object):
         # for k,v in env.items():
         #     print k, ':', v
         # print '**' * 20
-        self.params = params
+        # print data
+        self._params = params
         self.data = data
         self.user = None
         self.cookie = self.getCookie(env['HTTP_COOKIE'])
@@ -97,7 +98,13 @@ class Request(object):
         return cookies.get(_COOKIE_NAME)
 
     def get(self, key, default=None):
-        return self.params.get(key, default)
+        return self._params.get(key, default)
+
+    def params(self, **kwargs):
+        # print self._params
+        for k in kwargs.keys():
+            kwargs[k] = self._params.get(k) if self._params.get(k) else kwargs[k]
+        return kwargs if kwargs != {} else self._params
 
     # 返回key-value的dict:
     def input(self, **kwargs):
@@ -158,14 +165,40 @@ def make_signed_cookie(id, password, max_age=604800, expires=None):
     return '-'.join(L), expires
 
 # 中间件
-class Beforeware:
+class Middleware:
+    interceptors = []
     def __init__(self, app):
         self.wrapped_app = app
     def __call__(self, environ, start_response):
 
         ctx.request = Request(environ)
         ctx.response = Response()
-        for data in self.wrapped_app(environ, start_response):
+        # 拦截器
+        wrap = None
+        path = ctx.request.path
+        # print('拦截器：进入请求 [{}]'.format(path))
+        for intercept in self.interceptors:
+            # print 'add interceptors: level:{}'.format(intercept.level)
+            path_matched = False
+            if len(intercept.absolute_paths) == 0 and len(intercept.startswith_paths) == 0:
+                path_matched = True
+            elif path in intercept.absolute_paths:
+                path_matched = True
+            else:
+                for route in intercept.startswith_paths:
+                    if path.startswith(route):
+                        path_matched = True
+            if not path_matched:
+                continue
+            if wrap == None:
+                wrap = lambda: intercept(lambda: self.wrapped_app(environ, start_response))
+            else:
+                wrap = lambda:intercept(wrap)
+        if wrap == None:
+            result = self.wrapped_app(environ, start_response)
+        else:
+            result = wrap()
+        for data in result:
             yield data
 
 def datetime_filter(t):
@@ -187,7 +220,12 @@ def getHTML(route, template_path):
         def wrapper(*args, **kw):
             ctx.response.headers['Content-Type'] = 'text/html'
             data = func(*args, **kw)
-            return WSGIApplication.template_engine(template_path, data)
+            print '=======> HTML:{}'.format(data)
+            try:
+                HTML = WSGIApplication.template_engine(template_path, data)
+            except Exception, e:
+                HTML = '<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <title>ERROR</title> </head> <body> <h1>页面渲染出错:</h1> {}</body> </html>'.format(e.message)
+            return HTML
         wrapper.__method__ = 'GET'
         wrapper.__route__ = route
         return wrapper
@@ -198,11 +236,12 @@ def api(func):
     @functools.wraps(func)
     def _wrapper(*args, **kwargs):
         try:
-            r = json.dumps(func(*args, **kwargs))
+            data = func(*args, **kwargs)
+            r = json.dumps(dict(status=1, data=data))
         except APIError, e:
-            r = json.dumps(dict(error=e.error, data=e.data, message=e.message))
+            r = json.dumps(dict(status=0, error=e.error, data=e.data, message=e.message))
         except Exception, e:
-            r = json.dumps(dict(error='internalerror', data=e.__class__.__name__, message=e.message))
+            r = json.dumps(dict(status=0, error='internalerror', data=e.__class__.__name__, message=e.message))
         ctx.response.content_type = 'application/json'
 
         return r
@@ -267,13 +306,15 @@ def staticFileRoute(path):
 
 
 # 定义拦截器:
-def interceptor(*patterns):
+def interceptor(level=10, startswith=[], absolute=[]):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kw):
             return func(*args, **kw)
         wrapper.__type__ = 'interceptor'
-        wrapper.__patterns__ = patterns
+        wrapper.level = level
+        wrapper.startswith_paths = startswith
+        wrapper.absolute_paths = absolute
         return wrapper
     return decorator
 
@@ -300,7 +341,7 @@ class WSGIApplication(object):
     template_engine = None
     def __init__(self, document_root=None, **kw):
         self.urls = {}
-        self.Interceptor = {}
+        self.Middleware = Middleware
 
     # 添加一个URL定义:
     def add_url(self, func):
@@ -326,8 +367,12 @@ class WSGIApplication(object):
         if not hasattr(func, '__type__'):
             return
         if func.__type__ == 'interceptor':
-            for pattern in func.__patterns__:
-                self.Interceptor[pattern] = [func] if not self.Interceptor.has_key(pattern) else self.Interceptor[pattern].append(func)
+            self.Middleware.interceptors.append(func)
+            self.Middleware.interceptors.sort(key=lambda f:int(f.level), reverse=True)
+            # if not func.__patterns__:
+            #     self.Middleware.interceptor['always'].append(func)
+            # for pattern in func.__patterns__:
+            #     self.Interceptor[pattern] = [func] if not self.Interceptor.has_key(pattern) else self.Interceptor[pattern].append(func)
 
     # 设置TemplateEngine:
 
@@ -348,16 +393,19 @@ class WSGIApplication(object):
     # 返回WSGI处理函数:
     def get_wsgi_application(self):
         def wsgi(env, start_response):
-            handle_func = self.urls.get(ctx.request.handle_name)
-            # urls定义过的route访问
-            if handle_func:
-                Interceptors = self.Interceptor.get(handle_func.__route__)
-                if Interceptors:
-                    for interceptor in Interceptors:
-                        body = interceptor(handle_func)
-                else:
-                    body = handle_func()
-                print body
+            # print '======> run in wsgi'
+            # 路由处理函数 urls定义过的route访问
+            route_fn_name = ctx.request.handle_name
+            route_fn = self.urls.get(route_fn_name)
+            if not route_fn and route_fn_name.startswith('get/'):
+                for key, path_fn in self.urls.items():
+                    if key.find('(') > 3 and key.find(')') > 5:
+                        params = re.findall(key, route_fn_name)
+                        if len(params) > 0:
+                            route_fn = lambda :path_fn(*params)
+                            break
+            if route_fn:
+                body = route_fn()
                 if body == None:
                     body = {'result': 'success'}
             # 网站资源访问（www目录）
@@ -373,7 +421,7 @@ class WSGIApplication(object):
     # 开发模式下直接启动WSGI服务器:
     def run(self, port=9000, host='127.0.0.1'):
         from wsgiref.simple_server import make_server
-        server = make_server(host, port, Beforeware(self.get_wsgi_application()))
+        server = make_server(host, port, self.Middleware(self.get_wsgi_application()))
         print('run server on {}:{}'.format(host, port))
         server.serve_forever()
         # server.handle_request() # 只能处理一次请求

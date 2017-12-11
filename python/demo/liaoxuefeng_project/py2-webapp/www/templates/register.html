@@ -21,7 +21,7 @@ function check_form(thisform) {
         email: form.email.value,
         password: form.password.value
     }
-    $.post('http://127.0.0.1:9000/api/users', data, function(res) {
+    postApi('/api/users', data, function(res) {
         res = JSON.parse(res)
         if(res.message) {
             error_tips.innerText = res.message
