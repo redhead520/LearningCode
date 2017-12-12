@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from transwarp.web import get, post, patch, delete, ctx, getHTML,APIValueError, APIError, make_signed_cookie, interceptor
+from transwarp.web import get, post, patch,WSGIApplication, delete, ctx, getHTML,APIValueError, APIError, make_signed_cookie, interceptor
 from models.allmodels import User, Blog, Comment
 import re
 import hashlib
@@ -15,7 +15,7 @@ _COOKIE_KEY = configs["cookie"]["secretKey"]
 
 @getHTML('/', 'blogs.html')
 def index():
-    print '>>>>>>>>>>>>>>>blog all'
+    print '>>>>>>>>gg>>blog all'
     blogs = Blog.all()
     return dict(blogs=blogs, user=ctx.request.user)
 
@@ -145,27 +145,15 @@ def api_create_blog():
     result = blog.save()
     return blog
 
-@patch('/api/blogs')
-def api_update_blog():
-    i = ctx.request.input(id='', name='', summary='', content='')
-    print '============update'
-    id = i['id'].strip()
-    name = i['name'].strip()
-    summary = i['summary']
-    content = i['content']
+@delete('/api/blogs')
+def api_delete_blog():
+    i = ctx.request.input(id='')
+    id = i['id']
     if not id:
         raise APIValueError('id', 'id cannot be empty.')
-    if not name:
-        raise APIValueError('name', 'name cannot be empty.')
-    if not summary:
-        raise APIValueError('summary', 'summary cannot be empty.')
-    if not content:
-        raise APIValueError('content', 'content cannot be empty.')
     user = ctx.request.user
-    print 'update blogs:{}=========>'.format(id)
-    blog = Blog(name=name, summary=summary, content=content)
-    print blog
-    result = blog.update(id=int(id))
+    print 'delete blog:{}=========>'.format(id)
+    result = Blog.delete(id=int(id))
     return blog
 
 # 拦截器 优先级leve 0 (顶级)
@@ -176,15 +164,16 @@ def user_interceptor(next):
         if user:
             md5 = hashlib.md5('%s-%s-%s-%s' % (ctx.request.user_id, user['password'], ctx.request.expires, _COOKIE_KEY)).hexdigest()
             if md5 == ctx.request.cookie_md5:
+                print 'add user'
                 ctx.request.user = user
     return next()
 
-@interceptor()
+@interceptor(level=9,startswith=['/manage'], html=True)
 def mange_interceptor(next):
     user = ctx.request.user
     route = ctx.request.path
-    if user != None and route.startswith('/manage'):
-        if not user['admin']:
-            # redirect()
-            pass
+    if route.startswith('/manage'):
+        if user == None:
+            body = WSGIApplication.redirect('/')
+            return [ body ]
     return next()

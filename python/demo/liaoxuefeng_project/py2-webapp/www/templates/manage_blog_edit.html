@@ -53,6 +53,23 @@ $(function () {
                     });
                 }
 
+            },
+            del: function () {
+                console.log(this.id)
+                if (this.id) {
+                    console.log('ddd')
+                    data = {
+                        id:this.id
+                    }
+                    deleteApi('/api/blogs', data, function (res, message) {
+                        res = JSON.parse(res)
+                        console.log(res)
+                        if (res.status == 0) {
+                            return showError(res.message);
+                        }
+                        location.assign('/manage/blogs')
+                    });
+                }
             }
         },
         beforeMount () {
@@ -86,6 +103,7 @@ $(function () {
             </div>
             <div class="uk-margin">
                  <button type="submit" class="uk-button uk-button-primary" v-text="btn"></button>
+                <button type="button" v-on:click="del" class="uk-button uk-button-primary">删除</button>
             </div>
             <pre id="content" hidden>{{ blog.content }}</pre>
         </fieldset>

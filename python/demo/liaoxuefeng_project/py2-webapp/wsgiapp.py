@@ -13,7 +13,7 @@ db.create_engine(**configs['db'])
 wsgi = WSGIApplication()
 wsgi.add_module(urls)
 wsgi.add_interceptor(urls.user_interceptor)
-# wsgi.add_interceptor(urls.mange_interceptor)
+wsgi.add_interceptor(urls.mange_interceptor)
 
 
 # 初始化jinja2模板引擎:

@@ -175,9 +175,11 @@ class Middleware:
         ctx.request = Request(environ)
         ctx.response = Response()
         # 拦截器
-        wrap = None
+        is_wrap = None
         path = ctx.request.path
-        # print('拦截器：进入请求 [{}]'.format(path))
+        next = lambda:self.wrapped_app(environ, start_response)
+        print('拦截器：进入请求 [{}]'.format(path))
+        print '{}'.format(len(self.interceptors))
         for intercept in self.interceptors:
             # print 'add interceptors: level:{}'.format(intercept.level)
             path_matched = False
@@ -191,15 +193,22 @@ class Middleware:
                         path_matched = True
             if not path_matched:
                 continue
-            if wrap == None:
-                wrap = lambda: intercept(lambda: self.wrapped_app(environ, start_response))
+
+            def first_wrap(interceptor):
+                return lambda:interceptor(lambda:self.wrapped_app(environ, start_response))
+
+            def secend_wrap(interceptor, inner_intercept):
+                return lambda: interceptor(inner_intercept)
+
+            if not is_wrap:
+                is_wrap = 1
+                print 'AAAAAAA'
+                next = first_wrap(intercept)
             else:
-                wrap = lambda:intercept(wrap)
-        if wrap == None:
-            result = self.wrapped_app(environ, start_response)
-        else:
-            result = wrap()
-        for data in result:
+                print 'BBBBBB'
+                next = secend_wrap(intercept,next)
+        for data in next():
+            start_response(ctx.response.status, ctx.response.headers.items())
             yield data
 
 def datetime_filter(t):
@@ -410,6 +419,10 @@ class WSGIApplication(object):
             ctx.template_engine = engine
             cls._template_engine = engine
 
+    @classmethod
+    def redirect(cls,url):
+        ctx.response.headers['Content-Type'] = 'text/html'
+        return WSGIApplication.template_engine('redirect.html', {'redirect':url})
 
 # WSGI application
     # 返回WSGI处理函数:
@@ -426,8 +439,8 @@ class WSGIApplication(object):
                         if len(params) > 0:
                             route_fn = lambda :path_fn(*params)
                             break
-                print route_fn_name
-                print route_fn
+                # print route_fn_name
+                # print route_fn
             if route_fn:
                 body = route_fn()
                 if body == None:
@@ -438,7 +451,6 @@ class WSGIApplication(object):
             else:
                 ctx.response.content_type = 'application/json'
                 body = json.dumps({'result': 'error','message':'no the api({}) handle function'.format(ctx.request.handle_name)})
-            start_response(ctx.response.status, ctx.response.headers.items())
             return [body]
         return wsgi
 #WSGI server
