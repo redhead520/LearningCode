@@ -18,10 +18,10 @@ class Page(object):
         self.has_next = self.page_index < self.page_count
         self.has_previous = self.page_index > 1
 
-def get_models_by_page(model, page_index):
+def get_models_by_page(model, page_index, where=None, page_size=10):
     total = model.count_all()
-    page = Page(total, page_index)
-    result = model.find_by(order='created_at', offset=page.offset, limit=page.limit)
+    page = Page(total, page_index, page_size=page_size)
+    result = model.find_by(where=where,order='created_at', offset=page.offset, limit=page.limit)
     return result, page
 
 

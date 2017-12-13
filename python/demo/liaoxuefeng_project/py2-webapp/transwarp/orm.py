@@ -137,11 +137,11 @@ class Model(dict):
 
 
     @classmethod
-    def find_by(cls, group=None,having=None, order=None,limit=None,offset=None, **kwargs):
+    def find_by(cls, group=None,having=None, order=None,limit=None,offset=None, where=None):
         sql = cls.__select__
-        if kwargs != {}:
+        if where:
             sql = sql + ' WHERE {}'.format(
-            ','.join(map(lambda i: '{}={}'.format(i[0], Model.fmt(i[1])), kwargs.items())))
+            ','.join(map(lambda i: '{}={}'.format(i[0], Model.fmt(i[1])), where.items())))
 
         if group:
             sql = sql + ' GROUP BY ' + group

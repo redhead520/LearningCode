@@ -1,0 +1,131 @@
+{% extends '__base__.html' %}
+
+{% block title %}user列表页{% endblock %}
+
+{% block beforehead %}
+
+
+<script>
+    var
+    page_index = '{{ page_index }}';
+
+    var vm;
+    function initVM() {
+        $('#div-users').show();
+        window.vm = new Vue({
+            el: '#div-users',
+            data: {
+                users: [],
+                page: 1
+            },
+            methods: {
+                previous: function () {
+                    if (this.page.has_previous) {
+                        gotoPage(this.page.page_index - 1);
+                    }
+                },
+                next: function () {
+                    if (this.page.has_next) {
+                        gotoPage(this.page.page_index + 1);
+                    }
+                },
+                timefmt: function (str) {
+                    var newDate = new Date()
+                    value = Number(str) * 1000
+                    newDate.setTime(value)
+                    return newDate.toLocaleString()
+                },
+                gotoPage: function(n) {
+                    console.log('goto page ' + n)
+                    getApi('/api/users?page=' + n, function(res, message) {
+                        res = JSON.parse(res)
+                        console.log(res)
+                        if (res.status == 0) {
+                            return showError(res.message);
+                        }
+                        $('#div-loading').hide();
+                        for (i in res.data.users)
+                            res.data.users[i].created_at = window.vm.timefmt(res.data.users[i].created_at)
+                        window.vm.users=res.data.users
+                        window.vm.page = res.data.page
+                        console.log(window.vm.$data)
+
+                    });
+                },
+
+            },
+            beforeMount () {
+                console.log('beforeMount')
+                console.log(this.$data)
+                this.gotoPage(1)
+              }
+
+
+        });
+    }
+
+
+    $(function() {
+        initVM()
+    });
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="uk-width-1-1" >
+    <nav class="uk-navbar-container" uk-navbar>
+        <div class="uk-navbar-left">
+            <ul class="uk-navbar-nav">
+                <li class="">
+                    <a href="/manage/comments">评论</a>
+                </li>
+                <li class="">
+                    <a href="/manage/blogs">日志</a>
+                </li>
+                <li class="uk-active"><a href="/manage/users">用户</a></li>
+            </ul>
+        </div>
+    </nav>
+</div>
+
+
+<div id="div-users" class="uk-width-1-1">
+    <table class="uk-table uk-table-striped uk-table-hover">
+        <thead >
+            <tr>
+                <th class="">用户名</th>
+                <th class="">邮箱</th>
+                <th class="">创建时间</th>
+                <th class="">头像</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="user in users">
+                <td>
+                   <a target="_blank" :href="'/user/'+user.id" v-text="user.name"></a>
+                </td>
+                <td>
+                  <a target="_blank" :href="'/user/'+user.user_id" v-text="user.email"></a>
+                </td>
+                <td>
+                  <span v-text="user.created_at"></span>
+                </td>
+                <td>
+                    <img :src="user.image" alt="头像">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <hr>
+    <div class="uk-width-1-1 uk-text-center">
+        <ul class="uk-pagination uk-flex-center" uk-margin>
+            <li v-if="! page.has_previous" class="uk-disabled"><span><i uk-pagination-previous></i></span></li>
+            <li v-if="page.has_previous"><a @click="previous" href="#0"><i uk-pagination-previous></i></a></li>
+            <li class="uk-active"><span v-text="page.page_index"></span></li>
+            <li v-if="! page.has_next" class="uk-disabled"><span><i uk-pagination-next></i></span></li>
+            <li v-if="page.has_next"><a @click="next" href="#0"><i uk-pagination-next></i></a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

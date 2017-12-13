@@ -36,7 +36,7 @@
            return $.ajax(host + url, {
                 type: "DELETE",
                 crossDomainma:true,
-                success:fn
+                complete:fn
             });
         }
         function patchApi(url, data, fn) {

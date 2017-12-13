@@ -5,20 +5,12 @@
 {% block beforehead %}
 
 <script>
-var action = '{{ action }}',
-    is_idet = '{{ isedit }}';
-var submit_bt = is_idet ? '保存' : '提交'
-
-
-
 var vm;
 
 $(function () {
     vm = new Vue({
         el: '#form-blog',
         data: {
-            btn:is_idet ? '保存' : '提交',
-            id: is_idet ? '{{blog.id}}' : 0,
             name: '',
             summary: '',
             content: ''
@@ -26,13 +18,12 @@ $(function () {
         methods: {
             submit: function (event) {
                 data = {
-                    id: this.id,
                     name: this.name,
                     summary: this.summary,
                     content: this.content,
                 }
-                console.log(data)
-                patchApi('/api/blogs', data, function (res, message) {
+                console.log(this.content)
+                postApi('/api/blogs', data, function (res, message) {
                     res = JSON.parse(res)
                     console.log(res)
                     if (res.status == 0) {
@@ -40,34 +31,7 @@ $(function () {
                     }
                     location.assign('/manage/blogs')
                 })
-
-            },
-            del: function () {
-
-                if (this.id) {
-                    data = {
-                        id:this.id
-                    }
-                     console.log(data)
-                    deleteApi('/api/blogs?id=' + this.id, data, function (res,ts) {
-                        res = JSON.parse(res)
-                        console.log(res)
-                        if (res.status == 0) {
-                            return showError(res.message);
-                        }
-                        location.assign('/manage/blogs')
-                    });
-                }
             }
-        },
-        beforeMount () {
-            console.log('beforeMount')
-            if (is_idet) {
-                this.name = '{{blog.name}}'
-                this.summary = '{{blog.summary}}'
-                this.content = document.getElementById('content').innerText
-            }
-
         }
     });
 });
@@ -90,10 +54,9 @@ $(function () {
                 <textarea class="uk-textarea" v-model="content" rows="15"  placeholder="内容"></textarea>
             </div>
             <div class="uk-margin">
-                 <button type="submit" class="uk-button uk-button-primary" v-text="btn"></button>
-                <button type="button" v-on:click="del" class="uk-button uk-button-primary">删除</button>
+                 <button type="submit" class="uk-button uk-button-primary" >提交</button>
             </div>
-            <pre id="content" hidden>{{ blog.content }}</pre>
+
         </fieldset>
     </form>
 </div>

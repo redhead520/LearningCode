@@ -14,11 +14,12 @@ db.create_engine(**configs['db'])
 # b.save()
 # c.save()
 users_ids = User.all()
-user = random.sample(users_ids, 1)[0]
+for user in users_ids:
+    print user
 
-blogs = Blog.all()
-print '-all blogs:'
-print blogs
+# blogs = Blog.all()
+# print '-all blogs:'
+# print blogs
 # exit()
 # 生成10个blogs
 # for i in range(4,5):
@@ -34,10 +35,15 @@ print blogs
 #     print b.save()
 
 
-blog = random.sample(blogs, 1)[0]
+# blog = random.sample(blogs, 1)[0]
+#
+#
+# content = 'The Chocolate Chip and Cardamom Cookie.'
+# c = Comment(id='5',blog_id=str(blog['id']), user_id=str(user['id']),user_name=str(user['name']), user_image=str(user['image']),content=content)
+# c.save()
 
 
-content = 'The Chocolate Chip and Cardamom Cookie.'
-c = Comment(id='5',blog_id=str(blog['id']), user_id=str(user['id']),user_name=str(user['name']), user_image=str(user['image']),content=content)
-c.save()
+# create admin user
+admin = User(name='admin', email='admin@126.com',password='21232f297a57a5a743894a0e4a801fc3',admin=True)
+# admin.save()
 print 'done'

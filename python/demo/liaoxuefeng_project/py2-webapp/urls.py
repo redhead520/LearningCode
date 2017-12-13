@@ -22,8 +22,8 @@ def index():
 @getHTML('/blog/(\d+)', 'blog_content.html')
 def blog(id):
     blog = Blog.find_first(id=id)
-    print blog
-    print ctx.request.user
+    # print blog
+    # print ctx.request.user
     return dict(blog=blog, user=ctx.request.user)
 
 @getHTML('/register', 'register.html')
@@ -34,34 +34,40 @@ def register():
 def login():
     return dict()
 
-@getHTML('/manage/blogs','manage_blog_list.html')
-def manage_blogs():
-    # blogs, page = get_models_by_page(Blog, 1)
+@getHTML('/manage/users','manage_users_list.html')
+def manage_users():
     return dict(page_index=1, user=ctx.request.user)
 
-@getHTML('/manage/blogs/create','manage_blog_edit.html')
+@getHTML('/manage/comments','manage_comments_list.html')
+def manage_comments():
+    return dict(page_index=1, user=ctx.request.user)
+
+@getHTML('/manage/blogs','manage_blog_list.html')
+def manage_blogs():
+    return dict(page_index=1, user=ctx.request.user)
+
+@getHTML('/manage/blogs/create','manage_blog_create.html')
 def create_blogs():
-    print '1111111'*10
-    # blogs, page = get_models_by_page(Blog, 1)
-    # print blogs
-    # print page
     return dict(action=u'新建日志', isedit=False,  user=ctx.request.user)
 
 @getHTML('/manage/blogs/edit/(\d+)','manage_blog_edit.html')
 def edit_blogs(id=0):
-    print '2222222'*10
     blog = Blog.find_first(id=id)
-    print blog['content']
     return dict(action=u'编辑日志',blog=blog, isedit=True, user=ctx.request.user)
 
 
 @get('/api/users')
 def api_get_users():
-    users = User.all()
+
+    page = ctx.request.params(page=1)
+    user = ctx.request.user
+    where = None
+    users, page = get_models_by_page(User, page, where=where)
     # 把用户的口令隐藏掉:
     for u in users:
         u['password'] = '******'
-    return dict(users=users)
+    print('get users:=====>{}'.format(len(users)))
+    return dict(users=users, page=page.__dict__)
 
 # 注册
 @post('/api/users')
@@ -122,7 +128,11 @@ def loginout():
 @get('/api/blogs')
 def api_get_blogs():
     page = ctx.request.params(page=1)
-    blogs, page = get_models_by_page(Blog, page)
+    user = ctx.request.user
+    where = None
+    if not user['admin']:
+        where = {'user_id':user['id']}
+    blogs, page = get_models_by_page(Blog, page,where=where)
     print('get blogs:=====>{}'.format(len(blogs)))
     return dict(blogs=blogs, page=page.__dict__)
 
@@ -145,16 +155,84 @@ def api_create_blog():
     result = blog.save()
     return blog
 
+@patch('/api/blogs')
+def api_update_blog():
+    print '>>>>>>>> update blogs'
+    i = ctx.request.input()
+    id = i['id']
+    name = i['name']
+    summary = i['summary']
+    content = i['content']
+
+    if not id:
+        raise APIValueError('id', 'id cannot be empty.')
+    if not name:
+        raise APIValueError('name', 'name cannot be empty.')
+    if not summary:
+        raise APIValueError('summary', 'summary cannot be empty.')
+    if not content:
+        raise APIValueError('content', 'content cannot be empty.')
+    user = ctx.request.user
+    print 'update blog:{}=========>'.format(id)
+    blog = Blog(name=name, summary=summary,content=content)
+    result = blog.update(id=int(id))
+    return blog
+
 @delete('/api/blogs')
 def api_delete_blog():
+    i = ctx.request.params(id='')
+    id = i['id']
+    print 'delete blog:{}=========>'.format(id)
+    print i
+    if not id:
+        raise APIValueError('id')
+    result = Blog.delete(id=int(id))
+    return result
+
+@get('/api/comments')
+def api_get_comments():
+    page = ctx.request.params(page=1)
+    user = ctx.request.user
+    where = None
+    Comments, page = get_models_by_page(Comment, page,where=where)
+    print('get blogs:=====>{}'.format(len(Comments)))
+    return dict(Comments=Comments, page=page.__dict__)
+
+@post('/api/comments')
+def api_create_comment():
+    i = ctx.request.input()
+    user = ctx.request.user
+    blog_id = i['blog_id']
+    content = i['content']
+    if not blog_id:
+        raise APIValueError('blog_id', 'blog_id cannot be empty.')
+    if not content:
+        raise APIValueError('content', 'content cannot be empty.')
+    if not user:
+        raise APIValueError('user', 'user cannot be empty.please login in!')
+
+    print 'new comments:=========>'
+    comment = Comment(
+        user_id=user['id'],
+        user_name=user['name'],
+        user_image=user['image'],
+        blog_id=blog_id,
+        content=content)
+    print comment
+    result = comment.save()
+    return comment
+
+@delete('/api/comments')
+def api_delete_comment():
     i = ctx.request.input(id='')
     id = i['id']
     if not id:
         raise APIValueError('id', 'id cannot be empty.')
     user = ctx.request.user
-    print 'delete blog:{}=========>'.format(id)
-    result = Blog.delete(id=int(id))
-    return blog
+    print 'delete comment:{}=========>'.format(id)
+    result = Comment.delete(id=int(id))
+    return result
+
 
 # 拦截器 优先级leve 0 (顶级)
 @interceptor(level=0,startswith=['/manage','/api'], absolute=['/'], html=True)
@@ -164,16 +242,14 @@ def user_interceptor(next):
         if user:
             md5 = hashlib.md5('%s-%s-%s-%s' % (ctx.request.user_id, user['password'], ctx.request.expires, _COOKIE_KEY)).hexdigest()
             if md5 == ctx.request.cookie_md5:
-                print 'add user'
+                print 'manage page add user:{}'.format(user['name'])
                 ctx.request.user = user
     return next()
 
 @interceptor(level=9,startswith=['/manage'], html=True)
 def mange_interceptor(next):
     user = ctx.request.user
-    route = ctx.request.path
-    if route.startswith('/manage'):
-        if user == None:
-            body = WSGIApplication.redirect('/')
-            return [ body ]
+    if user == None:
+        body = WSGIApplication.redirect('/login')
+        return [ body ]
     return next()

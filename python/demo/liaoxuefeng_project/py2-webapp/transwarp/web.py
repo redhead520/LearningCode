@@ -71,7 +71,7 @@ class Request(object):
         # for k,v in env.items():
         #     print k, ':', v
         # print '**' * 20
-        # print data
+        # print env['wsgi.input'].read()
         self._params = params
         self.data = data
         self.user = None
@@ -109,7 +109,7 @@ class Request(object):
 
     # 返回key-value的dict:
     def input(self, **kwargs):
-        print self.data
+        # print self.data
         for k in kwargs.keys():
             kwargs[k] = self.data.get(k) if self.data.get(k) else kwargs[k]
         return kwargs if kwargs != {} else self.data
@@ -178,8 +178,8 @@ class Middleware:
         is_wrap = None
         path = ctx.request.path
         next = lambda:self.wrapped_app(environ, start_response)
-        print('拦截器：进入请求 [{}]'.format(path))
-        print '{}'.format(len(self.interceptors))
+        # print('拦截器：进入请求 [{}]'.format(path))
+        # print '{}'.format(len(self.interceptors))
         for intercept in self.interceptors:
             # print 'add interceptors: level:{}'.format(intercept.level)
             path_matched = False
@@ -202,10 +202,8 @@ class Middleware:
 
             if not is_wrap:
                 is_wrap = 1
-                print 'AAAAAAA'
                 next = first_wrap(intercept)
             else:
-                print 'BBBBBB'
                 next = secend_wrap(intercept,next)
         for data in next():
             start_response(ctx.response.status, ctx.response.headers.items())
@@ -428,10 +426,12 @@ class WSGIApplication(object):
     # 返回WSGI处理函数:
     def get_wsgi_application(self):
         def wsgi(env, start_response):
-            # print '======> run in wsgi'
+            print '======> 路由处理函数'
             # 路由处理函数 urls定义过的route访问
             route_fn_name = ctx.request.handle_name
             route_fn = self.urls.get(route_fn_name)
+            # print route_fn_name
+            # print route_fn
             if not route_fn and route_fn_name.startswith('get/'):
                 for key, path_fn in self.urls.items():
                     if key.find('(') > 3 and key.find(')') > 5:
@@ -443,6 +443,7 @@ class WSGIApplication(object):
                 # print route_fn
             if route_fn:
                 body = route_fn()
+                print body
                 if body == None:
                     body = {'result': 'success'}
             # 网站资源访问（www目录）
