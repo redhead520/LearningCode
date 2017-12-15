@@ -67,7 +67,7 @@ class Request(object):
             params[k] = escape(v[0])
         for k, v in data.items():
             data[k] = escape(v if type(v) == str else v[0])
-        # print '**'*20
+
         # for k,v in env.items():
         #     print k, ':', v
         # print '**' * 20
@@ -75,14 +75,17 @@ class Request(object):
         self._params = params
         self.data = data
         self.user = None
-        self.cookie = self.getCookie(env['HTTP_COOKIE'])
-        self.path = env['PATH_INFO']
-        self.method = env['REQUEST_METHOD']
-        self.content_type = env['CONTENT_TYPE']
-        self.http_accept = env['HTTP_ACCEPT']
+        self.cookie = self.getCookie(env.get('HTTP_COOKIE'))
+        self.path = env.get('PATH_INFO')
+        self.method = env.get('REQUEST_METHOD')
+        self.content_type = env.get('CONTENT_TYPE')
+        self.http_accept = env.get('HTTP_ACCEPT')
         self.handle_name = '{}{}'.format(self.method, self.path).lower()
 
+
     def getCookie(self, s):
+        if not s:
+            return None
         cookies = {x.split('=')[0].strip(): x.split('=')[1].strip() for x in s.split(';') if x.find('=')}
         if cookies.has_key(_COOKIE_NAME):
             cookie = cookies.get(_COOKIE_NAME)
@@ -171,9 +174,12 @@ class Middleware:
     def __init__(self, app):
         self.wrapped_app = app
     def __call__(self, environ, start_response):
-
+        # logging.info('开始请求: {}'.format(environ['PATH_INFO']))
+        # logging.info('开始设置Request')
         ctx.request = Request(environ)
+        # logging.info('开始设置Response')
         ctx.response = Response()
+        # logging.info('开始请求进入拦截器')
         # 拦截器
         is_wrap = None
         path = ctx.request.path
