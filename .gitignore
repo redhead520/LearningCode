@@ -1,2 +1,5 @@
 .idea
 *.pdf
+.pyc
+dist
+*.db
