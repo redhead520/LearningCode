@@ -459,12 +459,12 @@ class WSGIApplication(object):
                 ctx.response.content_type = 'application/json'
                 body = json.dumps({'result': 'error','message':'no the api({}) handle function'.format(ctx.request.handle_name)})
             return [body]
-        return wsgi
+        return self.Middleware(wsgi)
 #WSGI server
     # 开发模式下直接启动WSGI服务器:
     def run(self, port=9000, host='127.0.0.1'):
         from wsgiref.simple_server import make_server
-        server = make_server(host, port, self.Middleware(self.get_wsgi_application()))
+        server = make_server(host, port, self.get_wsgi_application())
         print('run server on {}:{}'.format(host, port))
         server.serve_forever()
         # server.handle_request() # 只能处理一次请求
