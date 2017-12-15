@@ -426,7 +426,7 @@ class WSGIApplication(object):
     # 返回WSGI处理函数:
     def get_wsgi_application(self):
         def wsgi(env, start_response):
-            print '======> 路由处理函数'
+            # print '======> 路由处理函数'
             # 路由处理函数 urls定义过的route访问
             route_fn_name = ctx.request.handle_name
             route_fn = self.urls.get(route_fn_name)
@@ -443,7 +443,7 @@ class WSGIApplication(object):
                 # print route_fn
             if route_fn:
                 body = route_fn()
-                print body
+                # print body
                 if body == None:
                     body = {'result': 'success'}
             # 网站资源访问（www目录）

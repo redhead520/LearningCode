@@ -15,7 +15,7 @@ _COOKIE_KEY = configs["cookie"]["secretKey"]
 
 @getHTML('/', 'blogs.html')
 def index():
-    print '>>>>>>>>gg>>blog all'
+    # print '>>>>>>>>gg>>blog all'
     blogs = Blog.all()
     return dict(blogs=blogs, user=ctx.request.user)
 
@@ -66,7 +66,7 @@ def api_get_users():
     # 把用户的口令隐藏掉:
     for u in users:
         u['password'] = '******'
-    print('get users:=====>{}'.format(len(users)))
+    # print('get users:=====>{}'.format(len(users)))
     return dict(users=users, page=page.__dict__)
 
 # 注册
@@ -117,9 +117,9 @@ def loginin():
 @delete('/api/authenticate')
 def loginout():
     user = ctx.request.user
-    print '注销==========>'
-    print user
-    print ctx.request.cookie
+    # print '注销==========>'
+    # print user
+    # print ctx.request.cookie
     if user:
         cookie, expires = make_signed_cookie(user['id'], user['password'], max_age=-10)
         ctx.response.set_cookie(_COOKIE_NAME, cookie, expires=expires)
@@ -133,7 +133,7 @@ def api_get_blogs():
     if not user['admin']:
         where = {'user_id':user['id']}
     blogs, page = get_models_by_page(Blog, page,where=where)
-    print('get blogs:=====>{}'.format(len(blogs)))
+    # print('get blogs:=====>{}'.format(len(blogs)))
     return dict(blogs=blogs, page=page.__dict__)
 
 @post('/api/blogs')
@@ -149,15 +149,15 @@ def api_create_blog():
     if not content:
         raise APIValueError('content', 'content cannot be empty.')
     user = ctx.request.user
-    print 'new blogs:=========>'
+    # print 'new blogs:=========>'
     blog = Blog(user_id=user['id'], user_name=user['name'],user_image=user['image'], name=name, summary=summary, content=content)
-    print blog
+    # print blog
     result = blog.save()
     return blog
 
 @patch('/api/blogs')
 def api_update_blog():
-    print '>>>>>>>> update blogs'
+    # print '>>>>>>>> update blogs'
     i = ctx.request.input()
     id = i['id']
     name = i['name']

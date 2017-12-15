@@ -153,7 +153,7 @@ class Model(dict):
             sql = sql + ' LIMIT ' + limit
         if offset:
             sql = sql + ' OFFSET ' + offset
-        print sql
+        # print sql
         result = db.select(sql)
         return result
 
@@ -167,9 +167,9 @@ class Model(dict):
     def save(self):
         fields = self.keys()
         values = map(lambda f: Model.fmt(self[f]), fields)
-        print '>>>>>>>>save'
-        print fields
-        print values
+        # print '>>>>>>>>save'
+        # print fields
+        # print values
         sql = self.__insert__ + ' ({}) VALUES ({})'.format(','.join(fields), ','.join(values))
         result = db.insert(sql)
         return result
