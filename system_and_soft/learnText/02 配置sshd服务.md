@@ -30,3 +30,12 @@ ClientAliveInterval指定了服务器端向客户端请求消息的时间间隔�
 而ClientAliveInterval 60表示每分钟发送一次，然后客户端响应，这样就保持长连接了。ClientAliveCountMax，使用默认值3即可，ClientAliveCountMax表示服务器发出请求后客户端没有响应的次数达到一定值，就自动断开，设成10000或更大，保证不断开（真没验证过。。。）
 
 
+For Ubuntu 14.04 and 16.04 users, please install from PPA:
+
+sudo apt-get install software-properties-common -y
+sudo add-apt-repository ppa:max-c-lv/shadowsocks-libev -y
+sudo apt-get update
+sudo apt install shadowsocks-libev
+配置文件
+编辑 /etc/shadowsocks-libev/config.json
+/etc/init.d/shadowsocks-libev start
