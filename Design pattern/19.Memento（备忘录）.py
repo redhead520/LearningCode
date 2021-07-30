@@ -49,15 +49,15 @@ class transactional(object):
     """
 
     def __init__(self, method):
-        print 'rrrr'
-        print method
+        print('rrrr')
+        print(method)
         self.method = method
 
     def __get__(self, obj, T):
         def transaction(*args, **kwargs):
-            print 'dddd'
-            print obj
-            print T
+            print('dddd')
+            print(obj)
+            print(T)
             state = Memento(obj)
             try:
                 return self.method(obj, *args, **kwargs)

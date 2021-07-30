@@ -26,12 +26,12 @@ class Component:
 
 class Leaf(Component):
     def Add(self, com):
-        print "leaf can't add"
+        print("leaf can't add")
 
     def Display(self, nDepth):
         strtemp = "-" * nDepth
         strtemp = strtemp + self.m_strName
-        print strtemp
+        print(strtemp)
 
 
 class Composite(Component):
@@ -45,7 +45,7 @@ class Composite(Component):
     def Display(self, nDepth):
         strtemp = "-" * nDepth
         strtemp = strtemp + self.m_strName
-        print strtemp
+        print(strtemp)
         for com in self.c:
             com.Display(nDepth + 2)
 

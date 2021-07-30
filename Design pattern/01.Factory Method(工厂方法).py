@@ -24,19 +24,19 @@ class LeiFeng():
 
 
 class Student(LeiFeng):
-    def buy_rice(self):
-        print '大学生帮你买米'
+    def buy_rice(self): 
+        print('大学生帮你买米')
 
     def sweep(self):
-        print '大学生帮你扫地'
+        print('大学生帮你扫地')
 
 
 class Volunteer(LeiFeng):
     def buy_rice(self):
-        print '社区志愿者帮你买米'
+        print('社区志愿者帮你买米')
 
     def sweep(self):
-        print '社区志愿者帮你扫地'
+        print('社区志愿者帮你扫地')
 
 
 class LeiFengFactory():
@@ -69,18 +69,18 @@ class LeiFeng():
 
 class Student(LeiFeng):
     def buy_rice(self):
-        print '大学生帮你买米'
+        print('大学生帮你买米')
 
     def sweep(self):
-        print '大学生帮你扫地'
+        print('大学生帮你扫地')
 
 
 class Volunteer(LeiFeng):
     def buy_rice(self):
-        print '社区志愿者帮你买米'
+        print('社区志愿者帮你买米')
 
     def sweep(self):
-        print '社区志愿者帮你扫地'
+        print('社区志愿者帮你扫地')
 
 
 class LeiFengFactory():

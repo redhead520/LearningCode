@@ -28,12 +28,12 @@ class AbstractExpression:
 
 class Expression(AbstractExpression):
     def Interpret(self, context):
-        print "terminal interpret"
+        print("terminal interpret")
 
 
 class NonterminalExpression(AbstractExpression):
     def Interpret(self, context):
-        print "Nonterminal interpret"
+        print("Nonterminal interpret")
 
 
 if __name__ == "__main__":

@@ -9,8 +9,7 @@ __author__ = 'redhead'
 class Singleton0(object):
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, '_instance'):
-            orig = super(Singleton0, cls)
-            cls._instance = orig.__new__(cls, *args, **kwargs)
+            cls._instance = super(Singleton0, cls).__new__(cls, *args, **kwargs)
         return cls._instance
 
 #2 共享属性
@@ -52,7 +51,7 @@ if __name__ == '__main__':
         a = 1
     a = Myclass0()
     b = Myclass0()
-    print id(a) == id(b)
+    print(id(a) == id(b))
 
     #2 共享属性
     print('2 共享属性:')
@@ -60,8 +59,8 @@ if __name__ == '__main__':
         a = 1
     c = Myclass1()
     d = Myclass1()
-    print id(c) == id(d)
-    print id(c.__dict__) == id(d.__dict__)
+    print(id(c) == id(d))
+    print(id(c.__dict__) == id(d.__dict__))
 
     # 3 装饰器版本
     print('3 装饰器版本:')
@@ -72,5 +71,5 @@ if __name__ == '__main__':
     e = Myclass2()
     e.y = 444
     f = Myclass2()
-    print f.y
-    print id(e) == id(f)
+    print(f.y)
+    print(id(e) == id(f))

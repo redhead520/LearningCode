@@ -78,7 +78,7 @@ def main():
     objects.append(Adapter(car, dict(make_noise=car_noise)))
 
     for obj in objects:
-        print "A", obj.name, "goes", obj.make_noise()
+        print("A", obj.name, "goes", obj.make_noise())
 
 
 if __name__ == "__main__":

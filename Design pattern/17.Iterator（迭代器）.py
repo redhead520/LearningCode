@@ -24,16 +24,16 @@ def count_to(count):
 
 # Test the generator
 count_to_two = lambda: count_to(2)
-count_to_five = lambda: count_to(5)
+count_to_five = lambda: count_to(7)
 
 print('Counting to two...')
 for number in count_to_two():
-    print number
+    print(number)
 
-print " "
+print(" ")
 
 print('Counting to five...')
 for number in count_to_five():
-    print number
+    print(number)
 
-print " "
+print(" ")

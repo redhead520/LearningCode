@@ -9,7 +9,7 @@
 # 栈S
 # S.push(), S.pop(), S.top, S.isempty()
 # 栈下溢underflow, 栈上溢owerflow
-import exceptions
+
 class STACK():
     def __init__(self, num=50, type=list):
         if type == dict:
@@ -19,16 +19,17 @@ class STACK():
 
         self.top = -1
         self.max = num
+
     def push(self, item):
         if self.top == self.max - 1:
-            raise exceptions.OverflowError('stack was overflow!')
+            raise OverflowError('stack was overflow!')
         self.top = self.top + 1
         self.stacks[self.top] = item
         return self.stacks
 
     def pop(self):
         if self.isempty():
-            raise exceptions.Exception('stack was underflow!')
+            raise Exception('stack was underflow!')
         self.top = self.top - 1
         return self.stacks[self.top + 1]
 
@@ -67,7 +68,7 @@ class QUEUE():
 
     def enter(self, item):
         if self.isfull():
-            raise exceptions.OverflowError('Queue was full!')
+            raise OverflowError('Queue was full!')
         if self.isempty():
             self.head = 0
         self.Q[self.tail] = item
@@ -78,7 +79,7 @@ class QUEUE():
 
     def out(self):
         if self.isempty():
-            raise exceptions.Exception('Queue was empty!')
+            raise Exception('Queue was empty!')
         self.head = self.head + 1
         if self.head == self.max:
             self.head = 0 if self.tail != 0 else -1
